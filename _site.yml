@@ -1,15 +1,13 @@
-name: my-website
+name: Data-Science
 output_dir: docs
-include: ["demo.R"]
-exclude: ["docs.txt", "*.csv"]
 navbar:
-  title: "My Website"
+  title: "Data Science"
   left:
     - text: "Home"
       href: index.html
-    - text: "About"
-      href: about.html
+    - text: "Wrangling"
+      href: wrangling.html
 output:
   html_document:
-    toc: true
+    toc: false
     highlight: textmate
