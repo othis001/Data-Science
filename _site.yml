@@ -1,0 +1,15 @@
+name: my-website
+output_dir: docs
+include: ["demo.R"]
+exclude: ["docs.txt", "*.csv"]
+navbar:
+  title: "My Website"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+output:
+  html_document:
+    toc: true
+    highlight: textmate
