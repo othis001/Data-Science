@@ -1,4 +1,7 @@
+---
+title: "Data Science"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
 
-#Data Science
-
-This website is a collection of Data Science projects worked on by **Oliver Thistlethwaite**.
+This website is a collection of Data Science projects.
