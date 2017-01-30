@@ -1,0 +1,55 @@
+---
+title: "A graph for the Economist"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this project is to recreate a graph that appeared in the Economist. The graph we want describes yearly cost of attending college versus college selectivity. The R libraries need are *dplyr*, *ggplot2*, and *tidyr*.
+
+```{r, include = FALSE}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+First we will read in the [ScorecardSmall.Rda](http://tiny.cc/dcfScorecardSmall.Rda) file. This is a file that contains admission rate and cost information for colleges. We are interested in just a few columns, namely *CONTROL* (1 for public, 2 for private), *ADM_RATE* (admissions rate), *NPT4i_PUB* (the average cost for families in the ith quintile for a public institution), and *NPT4i_PRIV* (similar only for private institutions). To similify things for us, we will convert the data frame into a narrow format where a column named *long_name* will denote the type and *net* will be the value of *NPT4i_*.
+
+```{r}
+load("ScorecardSmall.Rda")
+ ScorecardSmall <- ScorecardSmall %>%
+    filter(CONTROL != 3) %>%
+    gather(long_name, net, NPT41_PUB, NPT43_PUB, NPT45_PUB, NPT41_PRIV, NPT43_PRIV, NPT45_PRIV) %>%
+    select(CONTROL, INSTNM, ADM_RATE, long_name, net) %>%
+    filter(complete.cases(.))
+```
+
+ Now to fix the problem of the different suffixes of *PUB* and *PRIV*, we read in a csv file and perform a left join to normalize them.
+ 
+```{r}
+
+NPT4names <- read.csv("NPT4-names.csv")
+
+ScorecardSmall <-ScorecardSmall %>%
+  left_join(NPT4names)
+```
+
+Now observe the head of the dataframe is as follows.
+
+```{r, echo=FALSE}
+knitr::kable(head(ScorecardSmall))
+```
+
+Finally we construct the desired graphs. *facet_grid* greatly simplifies dividing the graph into cases based on income quintile and type of school. 
+
+```{r}
+ScorecardSmall %>%
+    ggplot(aes(x=ADM_RATE*100, y = net)) + 
+      geom_point(color = "blue", alpha = 0.2 ) +
+      facet_grid(CONTROL ~ short_name) +
+      geom_smooth(color = "black") +
+      labs(x = "Admission rate (percentage)", y = "Net cost per year (in dollars)")
+```

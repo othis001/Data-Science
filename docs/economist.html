@@ -12,7 +12,7 @@
 <meta name="author" content="Oliver Thistlethwaite" />
 
 
-<title>Data Science</title>
+<title>A graph for the Economist</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -194,13 +194,100 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Data Science</h1>
+<h1 class="title toc-ignore">A graph for the Economist</h1>
 <h4 class="author"><em>Oliver Thistlethwaite</em></h4>
 
 </div>
 
 
-<p>This website is a collection of Data Science projects.</p>
+<p>The purpose of this project is to recreate a graph that appeared in the Economist. The graph we want describes yearly cost of attending college versus college selectivity. The R libraries need are <em>dplyr</em>, <em>ggplot2</em>, and <em>tidyr</em>.</p>
+<p>First we will read in the <a href="http://tiny.cc/dcfScorecardSmall.Rda">ScorecardSmall.Rda</a> file. This is a file that contains admission rate and cost information for colleges. We are interested in just a few columns, namely <em>CONTROL</em> (1 for public, 2 for private), <em>ADM_RATE</em> (admissions rate), <em>NPT4i_PUB</em> (the average cost for families in the ith quintile for a public institution), and <em>NPT4i_PRIV</em> (similar only for private institutions). To similify things for us, we will convert the data frame into a narrow format where a column named <em>long_name</em> will denote the type and <em>net</em> will be the value of <em>NPT4i_</em>.</p>
+<pre class="r"><code>load(&quot;ScorecardSmall.Rda&quot;)
+ ScorecardSmall &lt;- ScorecardSmall %&gt;%
+    filter(CONTROL != 3) %&gt;%
+    gather(long_name, net, NPT41_PUB, NPT43_PUB, NPT45_PUB, NPT41_PRIV, NPT43_PRIV, NPT45_PRIV) %&gt;%
+    select(CONTROL, INSTNM, ADM_RATE, long_name, net) %&gt;%
+    filter(complete.cases(.))</code></pre>
+<p>Now to fix the problem of the different suffixes of <em>PUB</em> and <em>PRIV</em>, we read in a csv file and perform a left join to normalize them.</p>
+<pre class="r"><code>NPT4names &lt;- read.csv(&quot;NPT4-names.csv&quot;)
+
+ScorecardSmall &lt;-ScorecardSmall %&gt;%
+  left_join(NPT4names)</code></pre>
+<pre><code>## Joining, by = &quot;long_name&quot;</code></pre>
+<pre><code>## Warning in left_join_impl(x, y, by$x, by$y, suffix$x, suffix$y): joining
+## factor and character vector, coercing into character vector</code></pre>
+<p>Now observe the head of the dataframe is as follows.</p>
+<table>
+<thead>
+<tr class="header">
+<th align="right">CONTROL</th>
+<th align="left">INSTNM</th>
+<th align="right">ADM_RATE</th>
+<th align="left">long_name</th>
+<th align="right">net</th>
+<th align="left">short_name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">Alabama A &amp; M University</td>
+<td align="right">0.8989</td>
+<td align="left">NPT41_PUB</td>
+<td align="right">12683</td>
+<td align="left">Q1</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="left">University of Alabama at Birmingham</td>
+<td align="right">0.8673</td>
+<td align="left">NPT41_PUB</td>
+<td align="right">12361</td>
+<td align="left">Q1</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">University of Alabama in Huntsville</td>
+<td align="right">0.8062</td>
+<td align="left">NPT41_PUB</td>
+<td align="right">14652</td>
+<td align="left">Q1</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="left">Alabama State University</td>
+<td align="right">0.5125</td>
+<td align="left">NPT41_PUB</td>
+<td align="right">12342</td>
+<td align="left">Q1</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">The University of Alabama</td>
+<td align="right">0.5655</td>
+<td align="left">NPT41_PUB</td>
+<td align="right">17206</td>
+<td align="left">Q1</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="left">Auburn University at Montgomery</td>
+<td align="right">0.8371</td>
+<td align="left">NPT41_PUB</td>
+<td align="right">9044</td>
+<td align="left">Q1</td>
+</tr>
+</tbody>
+</table>
+<p>Finally we construct the desired graphs. <em>facet_grid</em> greatly simplifies dividing the graph into cases based on income quintile and type of school.</p>
+<pre class="r"><code>ScorecardSmall %&gt;%
+    ggplot(aes(x=ADM_RATE*100, y = net)) + 
+      geom_point(color = &quot;blue&quot;, alpha = 0.2 ) +
+      facet_grid(CONTROL ~ short_name) +
+      geom_smooth(color = &quot;black&quot;) +
+      labs(x = &quot;Admission rate (percentage)&quot;, y = &quot;Net cost per year (in dollars)&quot;)</code></pre>
+<pre><code>## `geom_smooth()` using method = &#39;gam&#39;</code></pre>
+<p><img src="economist_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 
 
 

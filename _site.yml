@@ -5,7 +5,7 @@ navbar:
   left:
     - text: "Home"
       href: index.html
-    - text: "Wrangling"
+    - text: "Wrangling and Plotting"
       href: wrangling.html
 output:
   html_document:

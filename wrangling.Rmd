@@ -1,3 +1,10 @@
-# Wrangling
+---
+title: "Wrangling and Plotting"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
 
-Blah blah
+This is a collection of some projects related to data wrangling and plotting.
+
+* [A graph for the Economist](economist.html)
+ 
