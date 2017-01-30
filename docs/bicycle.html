@@ -12,7 +12,7 @@
 <meta name="author" content="Oliver Thistlethwaite" />
 
 
-<title>Wrangling and Plotting</title>
+<title>Bicycle Rentals</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -194,18 +194,37 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Wrangling and Plotting</h1>
+<h1 class="title toc-ignore">Bicycle Rentals</h1>
 <h4 class="author"><em>Oliver Thistlethwaite</em></h4>
 
 </div>
 
 
-<p>This is a collection of some projects related to data wrangling and plotting.</p>
-<ul>
-<li><a href="birthdays.html">Birthdays and Holidays</a> Analyzes the relationship between birthdays and holidays.</li>
-<li><a href="bicycle.html">Bicycle Rentals</a> Analyzes times of bicycle rentals.</li>
-<li><a href="economist.html">A graph for the Economist</a> Recreates a graph from the Economist.</li>
-</ul>
+<p>The purpose of this project is to analyze times of bicycle rentals. We’ll use the R libraries <em>dplyr</em>, <em>ggplot2</em>, <em>lubridate</em>, as well as the <a href="http://tiny.cc/dcf/2014-Q4-Trips-History-Data-Small.rds">2014-Q4-Trips-History-Data-Small.rds</a> data set.</p>
+<p>First we’ll do a geometric desity plot by date.</p>
+<pre class="r"><code>Trips %&gt;%
+  ggplot(aes(x =sdate)) + geom_density()</code></pre>
+<p><img src="bicycle_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p>Now by time of day.</p>
+<pre class="r"><code>Trips &lt;- Trips %&gt;%
+  mutate(time_of_day = hour(sdate) + minute(sdate) / 60 , day_of_week = wday(sdate, label = TRUE), wday = ifelse(wday(sdate) %in% c(1,7), &quot;weekend&quot;, &quot;weekday&quot; ))
+
+
+Trips %&gt;%
+  ggplot(aes(x =time_of_day)) + geom_density()</code></pre>
+<p><img src="bicycle_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>Next we’ll separate out the plot by day of the week.</p>
+<pre class="r"><code>Trips %&gt;%
+  ggplot(aes(x =time_of_day)) + geom_density() + facet_wrap( ~day_of_week) </code></pre>
+<p><img src="bicycle_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>Now an overlay separating registered and casual users.</p>
+<pre class="r"><code>Trips %&gt;%
+  ggplot(aes(x =time_of_day)) + geom_density(aes(fill = client), alpha = 0.3, color = NA) + facet_wrap( ~day_of_week) </code></pre>
+<p><img src="bicycle_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Due to the similarity of the week days with each other as well as the week end days with eachother, we’ll separate into these two groups and draw the same plot.</p>
+<pre class="r"><code>Trips %&gt;%
+  ggplot(aes(x =time_of_day)) + geom_density(aes(fill = client), color = NA, alpha = 0.7) + facet_wrap( ~wday)</code></pre>
+<p><img src="bicycle_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 
 
 

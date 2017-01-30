@@ -6,5 +6,7 @@ output: html_document
 
 This is a collection of some projects related to data wrangling and plotting.
 
-* [A graph for the Economist](economist.html)
+* [Birthdays and Holidays](birthdays.html) Analyzes the relationship between birthdays and holidays.
+* [Bicycle Rentals](bicycle.html) Analyzes times of bicycle rentals.
+* [A graph for the Economist](economist.html) Recreates a graph from the Economist.
  
