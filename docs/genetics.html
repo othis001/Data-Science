@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Oliver Thistlethwaite" />
+
+
+<title>Scraping Nuclear Reactors</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-1.1/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-1.1/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Data Science</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="wrangling.html">Wrangling and Plotting</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Scraping Nuclear Reactors</h1>
+<h4 class="author"><em>Oliver Thistlethwaite</em></h4>
+
+</div>
+
+
+<p>The purpose of this project is to study nuclear reactors in Japan. First we’ll read in the required libraries.</p>
+<pre class="r"><code>library(dplyr)
+library(knitr)
+library(ggplot2)
+library(rvest)
+library(lubridate)
+library(scales)</code></pre>
+<p>Now we will read in tables of nuclear reactors from Wikipedia <a href="http://en.wikipedia.org/wiki/List_of_nuclear_reactors" class="uri">http://en.wikipedia.org/wiki/List_of_nuclear_reactors</a> via the webscraping library, <em>rvest</em>.</p>
+<pre class="r"><code>page &lt;- &quot;http://en.wikipedia.org/wiki/List_of_nuclear_reactors&quot;
+table_nodes &lt;- page %&gt;%
+  read_html() %&gt;%
+  html_nodes(&quot;table&quot;)
+table_list &lt;-
+  html_table(table_nodes[1:30], fill = TRUE)</code></pre>
+<p>After some searching, we find the relevant table is at position 25.</p>
+<pre class="r"><code>table &lt;- table_list[[25]]
+table %&gt;% head() %&gt;% kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Name</th>
+<th align="left">Reactor No.</th>
+<th align="left">Reactor</th>
+<th align="left">Reactor</th>
+<th align="left">Status</th>
+<th align="left">Capacity in MW</th>
+<th align="left">Capacity in MW</th>
+<th align="left">Construction Start Date</th>
+<th align="left">Commercial Operation Date</th>
+<th align="left">Closure</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">Reactor No.</td>
+<td align="left">Type</td>
+<td align="left">Reactor</td>
+<td align="left">Model</td>
+<td align="left">Capacity in MW</td>
+<td align="left">Capacity in MW</td>
+<td align="left">Construction Start Date</td>
+<td align="left">Net</td>
+<td align="left">Gross</td>
+</tr>
+<tr class="even">
+<td align="left">Fukushima Daiichi</td>
+<td align="left">1</td>
+<td align="left">BWR</td>
+<td align="left">BWR-3</td>
+<td align="left">Inoperable</td>
+<td align="left">439</td>
+<td align="left">460</td>
+<td align="left">25 July 1967</td>
+<td align="left">26 March 1971</td>
+<td align="left">19 May 2011</td>
+</tr>
+<tr class="odd">
+<td align="left">Fukushima Daiichi</td>
+<td align="left">2</td>
+<td align="left">BWR</td>
+<td align="left">BWR-4</td>
+<td align="left">Inoperable</td>
+<td align="left">760</td>
+<td align="left">784</td>
+<td align="left">9 June 1969</td>
+<td align="left">18 July 1974</td>
+<td align="left">19 May 2011</td>
+</tr>
+<tr class="even">
+<td align="left">Fukushima Daiichi</td>
+<td align="left">3</td>
+<td align="left">BWR</td>
+<td align="left">BWR-4</td>
+<td align="left">Inoperable</td>
+<td align="left">760</td>
+<td align="left">784</td>
+<td align="left">28 December 1970</td>
+<td align="left">27 March 1976</td>
+<td align="left">19 May 2011</td>
+</tr>
+<tr class="odd">
+<td align="left">Fukushima Daiichi</td>
+<td align="left">4</td>
+<td align="left">BWR</td>
+<td align="left">BWR-4</td>
+<td align="left">Shut down/ Inoperable</td>
+<td align="left">760</td>
+<td align="left">784</td>
+<td align="left">12 February 1973</td>
+<td align="left">12 October 1978</td>
+<td align="left">19 May 2011</td>
+</tr>
+<tr class="even">
+<td align="left">Fukushima Daiichi</td>
+<td align="left">5</td>
+<td align="left">BWR</td>
+<td align="left">BWR-4</td>
+<td align="left">Shut down</td>
+<td align="left">760</td>
+<td align="left">784</td>
+<td align="left">22 May 1972</td>
+<td align="left">18 April 1978</td>
+<td align="left">17 December 2013</td>
+</tr>
+</tbody>
+</table>
+<p>Now we fix the column names.</p>
+<pre class="r"><code>names(table) &lt;- c(&quot;Name&quot;,   &quot;Reactor_No&quot;, &quot;Type&quot;, &quot;Model&quot;, &quot;Status&quot;, &quot;Net_Capacity&quot;, &quot;Gross_Capacity&quot;, &quot;Construction_Start_Date&quot;, &quot;Commercial_Operation_Date&quot;, &quot;Closure&quot;)
+table &lt;- table[-1, ] # drop the first row</code></pre>
+<p>Now we use lubridate to make genuine date columns.</p>
+<pre class="r"><code>table &lt;- table %&gt;% mutate(Construction_Start_Date = parse_date_time(Construction_Start_Date, &quot;dmy&quot;),
+                          Commercial_Operation_Date = parse_date_time(Commercial_Operation_Date, &quot;dmy&quot;),
+                          Closure = parse_date_time(Closure, &quot;dmy&quot;))</code></pre>
+<p>Now we plot the <em>construction start date</em> versus the <em>net capacity</em> and <em>type</em>.</p>
+<pre class="r"><code>table  %&gt;% filter(Type != &quot;&quot;) %&gt;% 
+  ggplot(aes(x = Construction_Start_Date, y = Net_Capacity)) +
+  geom_point(aes(color = Type)) +
+  labs(x = &quot;Construction Start Date&quot;, y = &quot;Net Capacity&quot;)</code></pre>
+<p><img src="genetics_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p>Finally we make an informative graphic that shows how long it took between start of construction and commissioning for each nuclear reactor.</p>
+<pre class="r"><code>table$num &lt;- 1:nrow(table)
+
+table  %&gt;% filter(Type != &quot;&quot;) %&gt;%
+  mutate(Name = paste(Name, Reactor_No)) %&gt;%
+  ggplot(aes(y = num)) +
+  geom_segment(aes(x = Construction_Start_Date, y = Name, xend = Commercial_Operation_Date, yend = Name)) +
+  theme(axis.text.y=element_text(size=5)) +
+  labs(x = &quot;Date&quot;, y = &quot;Reactor Name&quot;)</code></pre>
+<p><img src="genetics_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

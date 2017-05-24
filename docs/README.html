@@ -9,10 +9,9 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="Oliver Thistlethwaite" />
 
 
-<title>Birthdays and Holidays</title>
+<title></title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -194,97 +193,15 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Birthdays and Holidays</h1>
-<h4 class="author"><em>Oliver Thistlethwaite</em></h4>
 
 </div>
 
 
-<p>The purpose of this project is to analyze any possible relationship between birthdays and holidays. We’ll use the R libraries <em>dplyr</em>, <em>ggplot2</em>, <em>lubridate</em>, as well as the <em>Birthdays</em> data set from the <em>mosaicData</em> library.</p>
-<p>First we will draw a plot measuring the number of births for each day in our time frame.</p>
-<pre class="r"><code>DailyBirths &lt;- Birthdays %&gt;%
-  group_by(date) %&gt;%
-  summarise(total = sum(births))
-
-DailyBirths %&gt;%
-  ggplot(aes(x=date, y = total)) + geom_point()</code></pre>
-<p><img src="birthdays_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
-<p>Next we draw a similar plot, only this time measured by week of the year.</p>
-<pre class="r"><code>WeeklyBirths &lt;- Birthdays %&gt;%
-  mutate(week = week(date)) %&gt;%
-  group_by(week) %&gt;%
-  summarise(total = sum(births))
-
-WeeklyBirths %&gt;%
-  ggplot(aes(x=week, y = total)) + geom_point()</code></pre>
-<p><img src="birthdays_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
-<p>Now by month of the year.</p>
-<pre class="r"><code>MonthlyBirths &lt;- Birthdays %&gt;%
-  mutate(month = month(date)) %&gt;%
-  group_by(month) %&gt;%
-  summarise(total = sum(births))
-
-MonthlyBirths %&gt;%
-  ggplot(aes(x=month, y = total)) + geom_point()</code></pre>
-<p><img src="birthdays_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
-<p>Here we plot by day of the year.</p>
-<pre class="r"><code>YDailyBirths &lt;- Birthdays %&gt;%
-  mutate(yday = yday(date)) %&gt;%
-  group_by(yday) %&gt;%
-  summarise(total = sum(births))
-
-head(YDailyBirths)</code></pre>
-<pre><code>## # A tibble: 6 x 2
-##    yday  total
-##   &lt;dbl&gt;  &lt;int&gt;
-## 1     1 160369
-## 2     2 169896
-## 3     3 180036
-## 4     4 182854
-## 5     5 184145
-## 6     6 186726</code></pre>
-<pre class="r"><code>YDailyBirths %&gt;%
-  ggplot(aes(x=yday, y = total)) + geom_point()</code></pre>
-<p><img src="birthdays_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<p>Next by day of the week.</p>
-<pre class="r"><code>WDailyBirths &lt;- Birthdays %&gt;%
-  mutate(wday = wday(date, label = TRUE)) %&gt;%
-  group_by(wday) %&gt;%
-  summarise(total = sum(births))
-
-head(WDailyBirths)</code></pre>
-<pre><code>## # A tibble: 6 x 2
-##    wday    total
-##   &lt;ord&gt;    &lt;int&gt;
-## 1   Sun  8647150
-## 2   Mon 10372019
-## 3  Tues 10813928
-## 4   Wed 10533539
-## 5 Thurs 10434966
-## 6   Fri 10593324</code></pre>
-<pre class="r"><code>WDailyBirths %&gt;%
-  ggplot(aes(x=wday, y = total)) + geom_point()</code></pre>
-<p><img src="birthdays_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-<p>For the remainder of this document, we restrict to the year 1980. First we graph by day of the week for this period.</p>
-<pre class="r"><code>MyYear &lt;- DailyBirths %&gt;%
-  filter(year(date) == 1980) %&gt;%
-  mutate(week_day = wday(date, label = TRUE))
-
-MyYear %&gt;%
-  ggplot(aes(x=date, y = total, color=week_day)) + geom_line()</code></pre>
-<p><img src="birthdays_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<p>Finally we read in a list of holidays and overlay that information with our plot.</p>
-<pre class="r"><code>Holidays &lt;- read.csv(&quot;http://tiny.cc/dcf/US-Holidays.csv&quot;, stringsAsFactors = FALSE) %&gt;%
-  mutate(date = as.POSIXct(dmy(date))) %&gt;%
-  mutate(week_day = wday(date, label = TRUE)) %&gt;%
-  filter(year(date) == 1980)
-
-MyYear %&gt;%
-  ggplot(aes(x=date, y = total, color=week_day)) +
-    geom_line()  +
-    geom_vline(data = Holidays, aes(xintercept = as.numeric(date), color = week_day)) +
-    geom_text(data = Holidays, mapping=aes(x = date, y = 11000, label = holiday), angle = 45, size = 3, color = &quot;black&quot;)</code></pre>
-<p><img src="birthdays_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<div id="data-science" class="section level1">
+<h1>Data-Science</h1>
+<p>Some of the Data Science projects I have worked on.</p>
+<p>Please see <a href="https://othis001.github.io/Data-Science/" class="uri">https://othis001.github.io/Data-Science/</a></p>
+</div>
 
 
 
