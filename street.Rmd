@@ -1,0 +1,73 @@
+---
+title: "The Word on the Street"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this project is to study which words appear most frequently in street addresses. First we will read in the required libraries.
+
+```{r, message=FALSE, warnings=FALSE}
+library(dplyr)
+library(knitr)
+library(tm)
+library(wordcloud2)
+```
+
+Now we will read in the street addresses contained in the Medicare database found at  [http://tiny.cc/dcf/CMS_ProvidersSimple.rds](http://tiny.cc/dcf/CMS_ProvidersSimple.rds).
+
+```{r}
+Addresses <- readRDS("Medicare.rds") %>% select(address)
+docs <- Corpus(VectorSource(Addresses))
+```
+
+Next we will clean the text.
+
+```{r}
+toSpace <- content_transformer(function (x , pattern ) gsub(pattern, " ", x))
+docs <- tm_map(docs, toSpace, "-")
+docs <- tm_map(docs, toSpace, "/")
+docs <- tm_map(docs, toSpace, "@")
+docs <- tm_map(docs, toSpace, "\\|")
+docs <- tm_map(docs, removeNumbers)
+
+# Convert the text to lower case
+docs <- tm_map(docs, content_transformer(tolower))
+# Remove numbers
+docs <- tm_map(docs, removeNumbers)
+# Remove english common stopwords
+docs <- tm_map(docs, removeWords, stopwords("english"))
+# Remove punctuations
+docs <- tm_map(docs, removePunctuation)
+# Eliminate extra white spaces
+docs <- tm_map(docs, stripWhitespace)
+```
+
+Now we will extract the word frequency information to a dataframe and then print the 20 most frequent words.
+
+```{r}
+dtm <- TermDocumentMatrix(docs)
+d <- as.data.frame(as.matrix(dtm) )
+colnames(d) <- c("freq")
+d$word<-rownames(d)
+rownames(d) <- 1:nrow(d)
+d <- d %>% arrange(desc(freq)) %>% select(word, freq)
+
+d %>% head(20) %>% kable(row.names=TRUE)
+```
+
+Finally we will generate a word cloud with the 200 most common words.
+
+```{r}
+
+d <- d %>% head(200)
+
+wordcloud2(d, size = 2)
+```
+
+
+
+

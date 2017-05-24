@@ -1,0 +1,84 @@
+---
+title: "Scraping Nuclear Reactors"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The purpose of this project is to study nuclear reactors in Japan. First we'll read in the required libraries.
+
+```{r, message=FALSE, warnings=FALSE}
+library(dplyr)
+library(knitr)
+library(ggplot2)
+library(rvest)
+library(lubridate)
+library(scales)
+```
+
+Now we will read in tables of nuclear reactors from Wikipedia [http://en.wikipedia.org/wiki/List_of_nuclear_reactors](http://en.wikipedia.org/wiki/List_of_nuclear_reactors) via the webscraping library, *rvest*.
+
+```{r}
+page <- "http://en.wikipedia.org/wiki/List_of_nuclear_reactors"
+table_nodes <- page %>%
+  read_html() %>%
+  html_nodes("table")
+table_list <-
+  html_table(table_nodes[1:30], fill = TRUE)
+
+```
+
+After some searching, we find the relevant table is at position 25.
+
+```{r}
+table <- table_list[[25]]
+table %>% head() %>% kable()
+```
+
+Now we fix the column names.
+
+```{r}
+
+names(table) <- c("Name",	"Reactor_No", "Type", "Model", "Status", "Net_Capacity", "Gross_Capacity", "Construction_Start_Date", "Commercial_Operation_Date", "Closure")
+table <- table[-1, ] # drop the first row
+
+```
+
+Now we use lubridate to make genuine date columns.
+
+```{r, warning=FALSE}
+
+table <- table %>% mutate(Construction_Start_Date = parse_date_time(Construction_Start_Date, "dmy"),
+                          Commercial_Operation_Date = parse_date_time(Commercial_Operation_Date, "dmy"),
+                          Closure = parse_date_time(Closure, "dmy"))
+```
+
+Now we plot the *construction start date* versus the *net capacity* and *type*.
+
+```{r, warning=FALSE}
+
+table  %>% filter(Type != "") %>% 
+  ggplot(aes(x = Construction_Start_Date, y = Net_Capacity)) +
+  geom_point(aes(color = Type)) +
+  labs(x = "Construction Start Date", y = "Net Capacity")
+
+```
+
+
+Finally we make an informative graphic that shows how long it took between start of construction and commissioning for each nuclear reactor.
+
+```{r, warning=FALSE}
+
+table$num <- 1:nrow(table)
+
+table  %>% filter(Type != "") %>%
+  mutate(Name = paste(Name, Reactor_No)) %>%
+  ggplot(aes(y = num)) +
+  geom_segment(aes(x = Construction_Start_Date, y = Name, xend = Commercial_Operation_Date, yend = Name)) +
+  theme(axis.text.y=element_text(size=5)) +
+  labs(x = "Date", y = "Reactor Name")
+
+```

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Oliver Thistlethwaite" />
+
+
+<title>The Word on the Street</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-1.1/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-1.1/highlight.js"></script>
+<script src="site_libs/htmlwidgets-0.8/htmlwidgets.js"></script>
+<link href="site_libs/wordcloud2-0.0.1/wordcloud.css" rel="stylesheet" />
+<script src="site_libs/wordcloud2-0.0.1/wordcloud2-all.js"></script>
+<script src="site_libs/wordcloud2-0.0.1/hover.js"></script>
+<script src="site_libs/wordcloud2-binding-0.2.0/wordcloud2.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Data Science</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="wrangling.html">Wrangling and Plotting</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">The Word on the Street</h1>
+<h4 class="author"><em>Oliver Thistlethwaite</em></h4>
+
+</div>
+
+
+<p>The purpose of this project is to study which words appear most frequently in street addresses. First we will read in the required libraries.</p>
+<pre class="r"><code>library(dplyr)
+library(knitr)
+library(tm)
+library(wordcloud2)</code></pre>
+<p>Now we will read in the street addresses contained in the Medicare database found at <a href="http://tiny.cc/dcf/CMS_ProvidersSimple.rds" class="uri">http://tiny.cc/dcf/CMS_ProvidersSimple.rds</a>.</p>
+<pre class="r"><code>Addresses &lt;- readRDS(&quot;Medicare.rds&quot;) %&gt;% select(address)
+docs &lt;- Corpus(VectorSource(Addresses))</code></pre>
+<p>Next we will clean the text.</p>
+<pre class="r"><code>toSpace &lt;- content_transformer(function (x , pattern ) gsub(pattern, &quot; &quot;, x))
+docs &lt;- tm_map(docs, toSpace, &quot;-&quot;)
+docs &lt;- tm_map(docs, toSpace, &quot;/&quot;)
+docs &lt;- tm_map(docs, toSpace, &quot;@&quot;)
+docs &lt;- tm_map(docs, toSpace, &quot;\\|&quot;)
+docs &lt;- tm_map(docs, removeNumbers)
+
+# Convert the text to lower case
+docs &lt;- tm_map(docs, content_transformer(tolower))
+# Remove numbers
+docs &lt;- tm_map(docs, removeNumbers)
+# Remove english common stopwords
+docs &lt;- tm_map(docs, removeWords, stopwords(&quot;english&quot;))
+# Remove punctuations
+docs &lt;- tm_map(docs, removePunctuation)
+# Eliminate extra white spaces
+docs &lt;- tm_map(docs, stripWhitespace)</code></pre>
+<p>Now we will extract the word frequency information to a dataframe and then print the 20 most frequent words.</p>
+<pre class="r"><code>dtm &lt;- TermDocumentMatrix(docs)
+d &lt;- as.data.frame(as.matrix(dtm) )
+colnames(d) &lt;- c(&quot;freq&quot;)
+d$word&lt;-rownames(d)
+rownames(d) &lt;- 1:nrow(d)
+d &lt;- d %&gt;% arrange(desc(freq)) %&gt;% select(word, freq)
+
+d %&gt;% head(20) %&gt;% kable(row.names=TRUE)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="left">word</th>
+<th align="right">freq</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td align="left">ave</td>
+<td align="right">171640</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td align="left">blvd</td>
+<td align="right">68294</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td align="left">ste</td>
+<td align="right">29424</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td align="left">street</td>
+<td align="right">22748</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td align="left">main</td>
+<td align="right">21937</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td align="left">medical</td>
+<td align="right">17505</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td align="left">pkwy</td>
+<td align="right">16500</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td align="left">park</td>
+<td align="right">15458</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td align="left">center</td>
+<td align="right">14413</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td align="left">road</td>
+<td align="right">14291</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td align="left">hwy</td>
+<td align="right">14037</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td align="left">avenue</td>
+<td align="right">11216</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td align="left">way</td>
+<td align="right">11036</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td align="left">highway</td>
+<td align="right">10934</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td align="left">drive</td>
+<td align="right">10249</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td align="left">hospital</td>
+<td align="right">9083</td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td align="left">state</td>
+<td align="right">8044</td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td align="left">washington</td>
+<td align="right">7242</td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td align="left">university</td>
+<td align="right">7102</td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td align="left">north</td>
+<td align="right">7032</td>
+</tr>
+</tbody>
+</table>
+<p>Finally we will generate a word cloud with the 200 most common words.</p>
+<pre class="r"><code>d &lt;- d %&gt;% head(200)
+
+wordcloud2(d, size = 2)</code></pre>
+<div id="htmlwidget-6b3a0fed3c7729c5c749" style="width:672px;height:480px;" class="wordcloud2 html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6b3a0fed3c7729c5c749">{"x":{"word":["ave","blvd","ste","street","main","medical","pkwy","park","center","road","hwy","avenue","way","highway","drive","hospital","state","washington","university","north","south","east","west","lake","broadway","old","cir","route","hill","central","river","pike","oak","ridge","plz","saint","new","euclid","valley","jefferson","broad","plaza","creek","grand","highland","memorial","york","jackson","mile","madison","san","suite","harrison","ctr","mill","franklin","parkway","union","forest","high","market","trl","cedar","lincoln","church","college","health","maple","lane","michigan","loop","grove","walnut","calle","elm","chestnut","francis","spruce","court","king","hills","village","spring","pine","boulevard","tpke","view","prospect","camino","john","pleasant","sunset","point","centre","fannin","johnson","peachtree","mall","county","wisconsin","vista","beach","holcombe","martin","harry","place","professional","country","riverside","circle","santa","hines","mount","green","ferry","mountain","white","lee","pacific","springs","bay","real","van","marshall","clinic","pablo","shore","fwy","pennsylvania","apt","crest","columbia","kings","montgomery","western","division","cleveland","fort","california","sam","hawkins","archer","first","congress","square","charles","roosevelt","taylor","fruit","campus","town","expy","irving","clifton","orange","delaware","dixie","luther","wolfe","bldg","post","grant","thomas","george","city","cherry","ashley","liberty","academy","barnes","clark","elmwood","ocean","one","morris","line","executive","bridge","national","eastern","laurel","ballas","arlington","manning","ter","campbell","brookline","greene","front","wilshire","lancaster","willow","run","oaks","club","auburn","federal","airport","red","locust"],"freq":[171640,68294,29424,22748,21937,17505,16500,15458,14413,14291,14037,11216,11036,10934,10249,9083,8044,7242,7102,7032,7018,6904,6654,6319,6052,5556,5553,5265,4513,4451,4111,4013,4008,3926,3925,3796,3690,3521,3411,3349,3255,3215,3167,3107,3101,2993,2960,2929,2840,2809,2769,2558,2449,2446,2411,2388,2381,2329,2307,2293,2287,2270,2237,2198,2182,2172,2108,2103,2079,2052,1979,1972,1950,1943,1936,1918,1880,1875,1850,1833,1801,1784,1775,1758,1740,1737,1736,1617,1603,1582,1574,1567,1540,1534,1527,1525,1497,1479,1476,1466,1456,1396,1387,1371,1369,1341,1333,1324,1314,1307,1292,1283,1277,1273,1266,1266,1253,1252,1235,1224,1220,1209,1206,1205,1203,1195,1176,1173,1164,1161,1161,1158,1144,1141,1138,1137,1134,1129,1106,1084,1080,1074,1064,1060,1059,1051,1047,1042,1024,1023,1015,1013,1003,998,991,988,988,983,983,979,975,971,967,964,959,957,953,940,937,934,932,932,931,930,919,918,912,910,905,904,902,895,892,891,889,887,883,882,878,870,867,867,856,854,853,852,851,849,844,836],"fontFamily":"Segoe UI","fontWeight":"bold","color":"random-dark","minSize":0,"weightFactor":0.00209741319039851,"backgroundColor":"white","gridSize":0,"minRotation":-0.785398163397448,"maxRotation":0.785398163397448,"shuffle":true,"rotateRatio":0.4,"shape":"circle","ellipticity":0.65,"figBase64":null,"hover":null},"evals":[],"jsHooks":[]}</script>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
