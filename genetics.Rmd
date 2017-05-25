@@ -1,5 +1,5 @@
 ---
-title: "Scraping Nuclear Reactors"
+title: "Unsupervised Genetics"
 author: "Oliver Thistlethwaite"
 output: html_document
 ---
@@ -8,77 +8,89 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The purpose of this project is to study nuclear reactors in Japan. First we'll read in the required libraries.
+The purpose of this project is apply clustering techniques to genetic data. First we read in the required libraries.
 
 ```{r, message=FALSE, warnings=FALSE}
 library(dplyr)
 library(knitr)
 library(ggplot2)
-library(rvest)
-library(lubridate)
-library(scales)
+library(DataComputing)
+library(tidyr)
+library(ggdendro)
 ```
 
-Now we will read in tables of nuclear reactors from Wikipedia [http://en.wikipedia.org/wiki/List_of_nuclear_reactors](http://en.wikipedia.org/wiki/List_of_nuclear_reactors) via the webscraping library, *rvest*.
+First we read in the table *NCI60* from the *DataComputing* library. Each row of this time is a genetic probe with the first column identifing the probe and the next 60 correspond to cell lines and their reported expression in each probe. We first convert the table to a narrow format where each row is an individual observation about a cell line in a probe.
+
 
 ```{r}
-page <- "http://en.wikipedia.org/wiki/List_of_nuclear_reactors"
-table_nodes <- page %>%
-  read_html() %>%
-  html_nodes("table")
-table_list <-
-  html_table(table_nodes[1:30], fill = TRUE)
+Narrow <- 
+  NCI60 %>%
+  gather(value=expression, key=cellLine, -Probe) %>%
+  group_by(Probe, cellLine) %>%
+  summarise(expression = mean(expression)) %>% 
+  ungroup()
 
 ```
 
-After some searching, we find the relevant table is at position 25.
+Next we will analyze the standard deviation of the *expression* numbers for each probe. We also test the Null Hypothesis that there is no relationship between probes and the standard deviations of the *expression* numbers for each probe.
 
 ```{r}
-table <- table_list[[25]]
-table %>% head() %>% kable()
+keep <- 500
+Best <-
+  Narrow %>%
+  group_by(Probe) %>%
+  summarise(spread = sd(expression)) %>%
+  arrange(desc(spread)) %>%
+  mutate(i = row_number()) %>%
+  head(keep)
+
+Randomized <-
+  Narrow %>%
+  mutate(Probe = sample(Probe)) %>%
+  group_by(Probe) %>%
+  summarise(spread = sd(expression)) %>%
+  arrange(desc(spread)) %>%
+  mutate(i = row_number()) %>%
+  head(keep)
+
+Best %>% 
+  ggplot(aes(x=i, y=spread)) + 
+  geom_line() +
+  geom_line(data=Randomized, color="red", size=1, alpha=.5)
 ```
 
-Now we fix the column names.
+As we can see from there graph, there is clearly a relationship so the Null Hypothesis fails.
+
+Now we filter out those probes with standard deviations of expression numbers that are above a threshold of 4.5.
 
 ```{r}
-
-names(table) <- c("Name",	"Reactor_No", "Type", "Model", "Status", "Net_Capacity", "Gross_Capacity", "Construction_Start_Date", "Commercial_Operation_Date", "Closure")
-table <- table[-1, ] # drop the first row
+Keepers <-
+  Narrow %>% group_by(Probe) %>%
+  filter(sd(expression) > 4.5)
 
 ```
 
-Now we use lubridate to make genuine date columns.
+Now we convert the data to a wide format where each row is a cell line and the columns are expression numbers reported by different probes.
 
 ```{r, warning=FALSE}
 
-table <- table %>% mutate(Construction_Start_Date = parse_date_time(Construction_Start_Date, "dmy"),
-                          Commercial_Operation_Date = parse_date_time(Commercial_Operation_Date, "dmy"),
-                          Closure = parse_date_time(Closure, "dmy"))
-```
+Keepers_wide <-
+  Keepers %>%
+  spread(key=Probe, value=expression)
 
-Now we plot the *construction start date* versus the *net capacity* and *type*.
-
-```{r, warning=FALSE}
-
-table  %>% filter(Type != "") %>% 
-  ggplot(aes(x = Construction_Start_Date, y = Net_Capacity)) +
-  geom_point(aes(color = Type)) +
-  labs(x = "Construction Start Date", y = "Net Capacity")
+rownames(Keepers_wide) <-Keepers_wide$cellLine
+Keepers_wide <- Keepers_wide %>% select(-cellLine)
 
 ```
 
-
-Finally we make an informative graphic that shows how long it took between start of construction and commissioning for each nuclear reactor.
+Now we finally apply a clustering algorithm to make a dendrogram.
 
 ```{r, warning=FALSE}
 
-table$num <- 1:nrow(table)
+Dists <- dist(Keepers_wide)
+Dendrogram <- hclust(Dists)
+ddata <- dendro_data(Dendrogram)
 
-table  %>% filter(Type != "") %>%
-  mutate(Name = paste(Name, Reactor_No)) %>%
-  ggplot(aes(y = num)) +
-  geom_segment(aes(x = Construction_Start_Date, y = Name, xend = Commercial_Operation_Date, yend = Name)) +
-  theme(axis.text.y=element_text(size=5)) +
-  labs(x = "Date", y = "Reactor Name")
+ggdendrogram(Dendrogram) 
 
 ```

@@ -12,7 +12,7 @@
 <meta name="author" content="Oliver Thistlethwaite" />
 
 
-<title>Scraping Nuclear Reactors</title>
+<title>Unsupervised Genetics</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -194,142 +194,69 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Scraping Nuclear Reactors</h1>
+<h1 class="title toc-ignore">Unsupervised Genetics</h1>
 <h4 class="author"><em>Oliver Thistlethwaite</em></h4>
 
 </div>
 
 
-<p>The purpose of this project is to study nuclear reactors in Japan. First we’ll read in the required libraries.</p>
+<p>The purpose of this project is apply clustering techniques to genetic data. First we read in the required libraries.</p>
 <pre class="r"><code>library(dplyr)
 library(knitr)
 library(ggplot2)
-library(rvest)
-library(lubridate)
-library(scales)</code></pre>
-<p>Now we will read in tables of nuclear reactors from Wikipedia <a href="http://en.wikipedia.org/wiki/List_of_nuclear_reactors" class="uri">http://en.wikipedia.org/wiki/List_of_nuclear_reactors</a> via the webscraping library, <em>rvest</em>.</p>
-<pre class="r"><code>page &lt;- &quot;http://en.wikipedia.org/wiki/List_of_nuclear_reactors&quot;
-table_nodes &lt;- page %&gt;%
-  read_html() %&gt;%
-  html_nodes(&quot;table&quot;)
-table_list &lt;-
-  html_table(table_nodes[1:30], fill = TRUE)</code></pre>
-<p>After some searching, we find the relevant table is at position 25.</p>
-<pre class="r"><code>table &lt;- table_list[[25]]
-table %&gt;% head() %&gt;% kable()</code></pre>
-<table>
-<thead>
-<tr class="header">
-<th align="left">Name</th>
-<th align="left">Reactor No.</th>
-<th align="left">Reactor</th>
-<th align="left">Reactor</th>
-<th align="left">Status</th>
-<th align="left">Capacity in MW</th>
-<th align="left">Capacity in MW</th>
-<th align="left">Construction Start Date</th>
-<th align="left">Commercial Operation Date</th>
-<th align="left">Closure</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Name</td>
-<td align="left">Reactor No.</td>
-<td align="left">Type</td>
-<td align="left">Reactor</td>
-<td align="left">Model</td>
-<td align="left">Capacity in MW</td>
-<td align="left">Capacity in MW</td>
-<td align="left">Construction Start Date</td>
-<td align="left">Net</td>
-<td align="left">Gross</td>
-</tr>
-<tr class="even">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">1</td>
-<td align="left">BWR</td>
-<td align="left">BWR-3</td>
-<td align="left">Inoperable</td>
-<td align="left">439</td>
-<td align="left">460</td>
-<td align="left">25 July 1967</td>
-<td align="left">26 March 1971</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="odd">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">2</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Inoperable</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">9 June 1969</td>
-<td align="left">18 July 1974</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="even">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">3</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Inoperable</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">28 December 1970</td>
-<td align="left">27 March 1976</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="odd">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">4</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Shut down/ Inoperable</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">12 February 1973</td>
-<td align="left">12 October 1978</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="even">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">5</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Shut down</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">22 May 1972</td>
-<td align="left">18 April 1978</td>
-<td align="left">17 December 2013</td>
-</tr>
-</tbody>
-</table>
-<p>Now we fix the column names.</p>
-<pre class="r"><code>names(table) &lt;- c(&quot;Name&quot;,   &quot;Reactor_No&quot;, &quot;Type&quot;, &quot;Model&quot;, &quot;Status&quot;, &quot;Net_Capacity&quot;, &quot;Gross_Capacity&quot;, &quot;Construction_Start_Date&quot;, &quot;Commercial_Operation_Date&quot;, &quot;Closure&quot;)
-table &lt;- table[-1, ] # drop the first row</code></pre>
-<p>Now we use lubridate to make genuine date columns.</p>
-<pre class="r"><code>table &lt;- table %&gt;% mutate(Construction_Start_Date = parse_date_time(Construction_Start_Date, &quot;dmy&quot;),
-                          Commercial_Operation_Date = parse_date_time(Commercial_Operation_Date, &quot;dmy&quot;),
-                          Closure = parse_date_time(Closure, &quot;dmy&quot;))</code></pre>
-<p>Now we plot the <em>construction start date</em> versus the <em>net capacity</em> and <em>type</em>.</p>
-<pre class="r"><code>table  %&gt;% filter(Type != &quot;&quot;) %&gt;% 
-  ggplot(aes(x = Construction_Start_Date, y = Net_Capacity)) +
-  geom_point(aes(color = Type)) +
-  labs(x = &quot;Construction Start Date&quot;, y = &quot;Net Capacity&quot;)</code></pre>
-<p><img src="genetics_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-<p>Finally we make an informative graphic that shows how long it took between start of construction and commissioning for each nuclear reactor.</p>
-<pre class="r"><code>table$num &lt;- 1:nrow(table)
+library(DataComputing)
+library(tidyr)
+library(ggdendro)</code></pre>
+<p>First we read in the table <em>NCI60</em> from the <em>DataComputing</em> library. Each row of this time is a genetic probe with the first column identifing the probe and the next 60 correspond to cell lines and their reported expression in each probe. We first convert the table to a narrow format where each row is an individual observation about a cell line in a probe.</p>
+<pre class="r"><code>Narrow &lt;- 
+  NCI60 %&gt;%
+  gather(value=expression, key=cellLine, -Probe) %&gt;%
+  group_by(Probe, cellLine) %&gt;%
+  summarise(expression = mean(expression)) %&gt;% 
+  ungroup()</code></pre>
+<p>Next we will analyze the standard deviation of the <em>expression</em> numbers for each probe. We also test the Null Hypothesis that there is no relationship between probes and the standard deviations of the <em>expression</em> numbers for each probe.</p>
+<pre class="r"><code>keep &lt;- 500
+Best &lt;-
+  Narrow %&gt;%
+  group_by(Probe) %&gt;%
+  summarise(spread = sd(expression)) %&gt;%
+  arrange(desc(spread)) %&gt;%
+  mutate(i = row_number()) %&gt;%
+  head(keep)
 
-table  %&gt;% filter(Type != &quot;&quot;) %&gt;%
-  mutate(Name = paste(Name, Reactor_No)) %&gt;%
-  ggplot(aes(y = num)) +
-  geom_segment(aes(x = Construction_Start_Date, y = Name, xend = Commercial_Operation_Date, yend = Name)) +
-  theme(axis.text.y=element_text(size=5)) +
-  labs(x = &quot;Date&quot;, y = &quot;Reactor Name&quot;)</code></pre>
-<p><img src="genetics_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+Randomized &lt;-
+  Narrow %&gt;%
+  mutate(Probe = sample(Probe)) %&gt;%
+  group_by(Probe) %&gt;%
+  summarise(spread = sd(expression)) %&gt;%
+  arrange(desc(spread)) %&gt;%
+  mutate(i = row_number()) %&gt;%
+  head(keep)
+
+Best %&gt;% 
+  ggplot(aes(x=i, y=spread)) + 
+  geom_line() +
+  geom_line(data=Randomized, color=&quot;red&quot;, size=1, alpha=.5)</code></pre>
+<p><img src="genetics_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>As we can see from there graph, there is clearly a relationship so the Null Hypothesis fails.</p>
+<p>Now we filter out those probes with standard deviations of expression numbers that are above a threshold of 4.5.</p>
+<pre class="r"><code>Keepers &lt;-
+  Narrow %&gt;% group_by(Probe) %&gt;%
+  filter(sd(expression) &gt; 4.5)</code></pre>
+<p>Now we convert the data to a wide format where each row is a cell line and the columns are expression numbers reported by different probes.</p>
+<pre class="r"><code>Keepers_wide &lt;-
+  Keepers %&gt;%
+  spread(key=Probe, value=expression)
+
+rownames(Keepers_wide) &lt;-Keepers_wide$cellLine
+Keepers_wide &lt;- Keepers_wide %&gt;% select(-cellLine)</code></pre>
+<p>Now we finally apply a clustering algorithm to make a dendrogram.</p>
+<pre class="r"><code>Dists &lt;- dist(Keepers_wide)
+Dendrogram &lt;- hclust(Dists)
+ddata &lt;- dendro_data(Dendrogram)
+
+ggdendrogram(Dendrogram) </code></pre>
+<p><img src="genetics_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 
 
 
