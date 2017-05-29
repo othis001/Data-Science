@@ -11,5 +11,4 @@ This is a collection of some projects related to data wrangling and plotting.
 * [A graph for the Economist](economist.html) Recreates a graph from the Economist.
 * [Word on the Street](street.html) Analyzes common words in street names.
 * [Scraping Nuclear Reactors](nuclear.html) An example of webscraping.
-* [Unsupervised Genetics](genetics.html) An example of clustering on genetics data.
  

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Oliver Thistlethwaite" />
+
+
+<title>House Prices</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-1.1/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-1.1/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Data Science</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="wrangling.html">Wrangling and Plotting</a>
+</li>
+<li>
+  <a href="learning.html">Machine Learning</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">House Prices</h1>
+<h4 class="author"><em>Oliver Thistlethwaite</em></h4>
+
+</div>
+
+
+<p>In this project, we will analyze house prices from Saratoga, CA.</p>
+<p>First we will read in the required libraries and a database of house prices.</p>
+<pre class="r"><code>library(dplyr)
+library(readr)
+library(ggplot2)
+library(knitr)
+library(caret)
+
+houses = read_csv(&quot;http://tiny.cc/mosaic/SaratogaHouses.csv&quot;)
+houses %&gt;% head() %&gt;% kable() </code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Price</th>
+<th align="right">Living.Area</th>
+<th align="right">Baths</th>
+<th align="right">Bedrooms</th>
+<th align="left">Fireplace</th>
+<th align="right">Acres</th>
+<th align="right">Age</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">142212</td>
+<td align="right">1982</td>
+<td align="right">1.0</td>
+<td align="right">3</td>
+<td align="left">N</td>
+<td align="right">2.00</td>
+<td align="right">133</td>
+</tr>
+<tr class="even">
+<td align="right">134865</td>
+<td align="right">1676</td>
+<td align="right">1.5</td>
+<td align="right">3</td>
+<td align="left">Y</td>
+<td align="right">0.38</td>
+<td align="right">14</td>
+</tr>
+<tr class="odd">
+<td align="right">118007</td>
+<td align="right">1694</td>
+<td align="right">2.0</td>
+<td align="right">3</td>
+<td align="left">Y</td>
+<td align="right">0.96</td>
+<td align="right">15</td>
+</tr>
+<tr class="even">
+<td align="right">138297</td>
+<td align="right">1800</td>
+<td align="right">1.0</td>
+<td align="right">2</td>
+<td align="left">Y</td>
+<td align="right">0.48</td>
+<td align="right">49</td>
+</tr>
+<tr class="odd">
+<td align="right">129470</td>
+<td align="right">2088</td>
+<td align="right">1.0</td>
+<td align="right">3</td>
+<td align="left">Y</td>
+<td align="right">1.84</td>
+<td align="right">29</td>
+</tr>
+<tr class="even">
+<td align="right">206512</td>
+<td align="right">1456</td>
+<td align="right">2.0</td>
+<td align="right">3</td>
+<td align="left">N</td>
+<td align="right">0.98</td>
+<td align="right">10</td>
+</tr>
+</tbody>
+</table>
+<p>From examining the head of the file, we see what information the database provides us.</p>
+<p>Next we will convert all the columns into numeric data.</p>
+<pre class="r"><code>houses &lt;- houses %&gt;% mutate(Fireplace = ifelse(Fireplace == &quot;N&quot;,0,1))</code></pre>
+<p>Next we will create a training set and testing set to test some machine learning algorithms. We’ll use 80% of the data for training and 20% for testing.</p>
+<pre class="r"><code>set.seed(3)
+
+index &lt;- 1:nrow(houses)
+testindex &lt;- sample(index, trunc(length(index)/5))
+
+train &lt;- na.omit(houses[-testindex,]) 
+
+test &lt;- na.omit(houses[testindex,])
+testsize &lt;- nrow(test)</code></pre>
+<p>We’ll compare the different models by mean squared error. First we’ll try the NULL Model (The model whose output is always the mean of the output variable).</p>
+<pre class="r"><code>mod &lt;- lm(Price ~ 1, data = train)
+
+pred &lt;- predict(mod, test)
+
+mse &lt;- sum( ( pred - test$Price )^2 ) / testsize
+
+mse^(1/2)</code></pre>
+<pre><code>## [1] 99636.08</code></pre>
+<p>So on average our error is about $100,000 which is unacceptable.</p>
+<p>Next we’ll try a linear model.</p>
+<pre class="r"><code>mod &lt;- lm(Price ~ ., data = train)
+
+pred &lt;- predict(mod, test)
+
+mse &lt;- sum( ( pred - test$Price )^2 ) / testsize
+
+mse^(1/2)</code></pre>
+<pre><code>## [1] 57189.04</code></pre>
+<p>This is significantly better.</p>
+<p>Now we’ll try a Conditional Inference Tree.</p>
+<pre class="r"><code>mod &lt;- train(Price ~ ., data = train, method = &quot;ctree&quot;)
+
+pred &lt;- predict(mod, test)
+
+mse &lt;- sum( ( pred - test$Price )^2 ) / testsize
+
+mse^(1/2)</code></pre>
+<pre><code>## [1] 63163.48</code></pre>
+<p>More or less the same as the linear model. Finally we will plot the resulting model.</p>
+<pre class="r"><code>plot(mod$finalModel)</code></pre>
+<p><img src="houses_files/figure-html/unnamed-chunk-7-1.png" width="1728" /></p>
+<div id="principal-component-analysis" class="section level2">
+<h2>Principal Component Analysis</h2>
+<p>Finally we’ll try to apply PCA (principal component analysis) and see if that improved our results. First we will create the principal components using the feature columns.</p>
+<pre class="r"><code>prin_comp &lt;- prcomp(train %&gt;% select(-Price), scale. = T)
+
+std_dev &lt;- prin_comp$sdev
+pr_var &lt;- std_dev^2
+prop_varex &lt;- pr_var/sum(pr_var)</code></pre>
+<p>Next we will examine the cumulative proportion of variance explained for the principal components.</p>
+<pre class="r"><code>plot(cumsum(prop_varex), xlab = &quot;Principal Component&quot;,
+              ylab = &quot;Cumulative Proportion of Variance Explained&quot;,
+              type = &quot;b&quot;)</code></pre>
+<p><img src="houses_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Most of the variance is explained by the first two components. Next we will plot the resultant first two principal components.</p>
+<pre class="r"><code>biplot(prin_comp, scale = 0)</code></pre>
+<p><img src="houses_files/figure-html/unnamed-chunk-10-1.png" width="1152" /></p>
+<p>Now to apply some machine learning algorithms, we creat PCA training and testing sets.</p>
+<pre class="r"><code>train.pca &lt;- data.frame(Price = train$Price, prin_comp$x) 
+
+test.pca &lt;- as.data.frame( predict(prin_comp, newdata = test %&gt;% select(-Price)) )
+test.pca$Price &lt;- test$Price</code></pre>
+<p>Applying a linear model to just the first principal component produces the best mean squared error.</p>
+<pre class="r"><code>mod &lt;- lm(Price ~ PC1, data = train.pca)
+
+pred &lt;- predict(mod, test.pca)
+
+mse &lt;- sum( ( pred - test.pca$Price )^2 ) / testsize
+
+mse^(1/2)</code></pre>
+<pre><code>## [1] 63778.04</code></pre>
+<p>Observe even though we failed to improve the mean squared error, we did manage to reduce the problem from 6 dimensions to 1 dimension and obtain a similar mean squared error.</p>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

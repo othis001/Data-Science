@@ -7,6 +7,8 @@ navbar:
       href: index.html
     - text: "Wrangling and Plotting"
       href: wrangling.html
+    - text: "Machine Learning"
+      href: learning.html
 output:
   html_document:
     toc: false

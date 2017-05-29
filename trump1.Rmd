@@ -1,0 +1,33 @@
+---
+title: "Trump vs Obama in Twitter Sentiment"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this project, we will compare the sentiment of twitter messages from Trump and Obama. First we will read in the required libraries.
+
+```{r, warning = FALSE, message=FALSE}
+library(dplyr)
+library(readr)
+library(ggplot2)
+library(knitr)
+library(caret)
+
+houses = read_csv("http://tiny.cc/mosaic/SaratogaHouses.csv")
+houses %>% head() %>% kable() 
+
+```
+
+
+
+```{r, warning = FALSE, message=FALSE}
+
+houses <- houses %>% mutate(Fireplace = ifelse(Fireplace == "N",0,1))
+
+```
+
+
