@@ -1,33 +1,99 @@
 ---
-title: "Trump vs Obama in Twitter Sentiment"
+title: "Trump vs Obama in Twitter Word Frequencies"
 author: "Oliver Thistlethwaite"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(twitteR)
+
+consumer_key <- "C7Z6vXevtUTMMLSmFMl4DI1hP"
+consumer_secret <- "07hTtfya6E0ajoTbLFL0C31OFYszx7Zhn9cmC7RRDlKWD3e1OO"
+access_token <- "868955684003618817-JfeKfcl85iI5r3A0dsv2dIsBY7Qk7Tt"
+access_secret <- "qO6gsNnGxxyxc9cydexjqpWdfi5h0vQuBFDe1Rcl03HRN"
+
+setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
+
 ```
 
-In this project, we will compare the sentiment of twitter messages from Trump and Obama. First we will read in the required libraries.
+In this project, we will compare the word frequencies in twitter messages from Trump and Obama. First we will read in the required libraries.
 
 ```{r, warning = FALSE, message=FALSE}
+
 library(dplyr)
-library(readr)
-library(ggplot2)
 library(knitr)
-library(caret)
-
-houses = read_csv("http://tiny.cc/mosaic/SaratogaHouses.csv")
-houses %>% head() %>% kable() 
+library(purrr)
+library(twitteR)
+library(tidytext)
+library(stringr)
+library(wordcloud2)
 
 ```
 
+To set up *TwitteR*, please see [R Bloggers](https://www.r-bloggers.com/setting-up-the-twitter-r-package-for-text-analytics/).
+
+Now we'll load the last 3200 tweets from each of Trump and Obama. Note the number of tweets will be less since we are excluding retweets.
+
+```{r, warning = FALSE, message=FALSE}
+
+trump_tweets <- userTimeline("realDonaldTrump", n=3200)
+trump_tweets_df <- tbl_df(map_df(trump_tweets, as.data.frame))
+
+obama_tweets <- userTimeline("BarackObama", n=3200)
+obama_tweets_df <- tbl_df(map_df(obama_tweets, as.data.frame))
+
+```
+
+Now we'll count word frequencies for both of them and create word clouds.
+
+## For Trump
+
+```{r, warning = FALSE, message=FALSE}
+
+tweets <- trump_tweets_df
+
+reg <- "([^A-Za-z\\d#@']|'(?![A-Za-z\\d#@]))"
+tweet_words <- tweets %>%
+  filter(!str_detect(text, '^"')) %>%
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+  unnest_tokens(word, text, token = "regex", pattern = reg) %>%
+  filter(!word %in% stop_words$word,
+         str_detect(word, "[a-z]"))
+
+tweet_words <- tweet_words %>% group_by(word) %>% tally() %>% mutate(freq = n) %>% select(word, freq) %>% arrange(desc(freq))
+
+tweet_words %>% head(20) %>% kable(row.names=TRUE)
+```
+
+
+```{r, warning = FALSE, fig.width=8}
+wordcloud2(tweet_words, size = 0.6)
+```
+
+## For Obama
 
 
 ```{r, warning = FALSE, message=FALSE}
 
-houses <- houses %>% mutate(Fireplace = ifelse(Fireplace == "N",0,1))
+tweets <- obama_tweets_df
 
+reg <- "([^A-Za-z\\d#@']|'(?![A-Za-z\\d#@]))"
+tweet_words <- tweets %>%
+  filter(!str_detect(text, '^"')) %>%
+  mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+  unnest_tokens(word, text, token = "regex", pattern = reg) %>%
+  filter(!word %in% stop_words$word,
+         str_detect(word, "[a-z]"))
+
+tweet_words <- tweet_words %>% group_by(word) %>% tally() %>% mutate(freq = n) %>% select(word, freq) %>% arrange(desc(freq))
+
+tweet_words %>% head(20) %>% kable(row.names=TRUE)
+```
+
+```{r, warning = FALSE, fig.width=8}
+wordcloud2(tweet_words, size = 0.6)
 ```
 
 

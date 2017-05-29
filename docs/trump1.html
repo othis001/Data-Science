@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Oliver Thistlethwaite" />
+
+
+<title>Trump vs Obama in Twitter Word Frequencies</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-1.1/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-1.1/highlight.js"></script>
+<script src="site_libs/htmlwidgets-0.8/htmlwidgets.js"></script>
+<link href="site_libs/wordcloud2-0.0.1/wordcloud.css" rel="stylesheet" />
+<script src="site_libs/wordcloud2-0.0.1/wordcloud2-all.js"></script>
+<script src="site_libs/wordcloud2-0.0.1/hover.js"></script>
+<script src="site_libs/wordcloud2-binding-0.2.0/wordcloud2.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Data Science</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="wrangling.html">Wrangling and Plotting</a>
+</li>
+<li>
+  <a href="learning.html">Machine Learning</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Trump vs Obama in Twitter Word Frequencies</h1>
+<h4 class="author"><em>Oliver Thistlethwaite</em></h4>
+
+</div>
+
+
+<p>In this project, we will compare the word frequencies in twitter messages from Trump and Obama. First we will read in the required libraries.</p>
+<pre class="r"><code>library(dplyr)
+library(knitr)
+library(purrr)
+library(twitteR)
+library(tidytext)
+library(stringr)
+library(wordcloud2)</code></pre>
+<p>To set up <em>TwitteR</em>, please see <a href="https://www.r-bloggers.com/setting-up-the-twitter-r-package-for-text-analytics/">R Bloggers</a>.</p>
+<p>Now we’ll load the last 3200 tweets from each of Trump and Obama. Note the number of tweets will be less since we are excluding retweets.</p>
+<pre class="r"><code>trump_tweets &lt;- userTimeline(&quot;realDonaldTrump&quot;, n=3200)
+trump_tweets_df &lt;- tbl_df(map_df(trump_tweets, as.data.frame))
+
+obama_tweets &lt;- userTimeline(&quot;BarackObama&quot;, n=3200)
+obama_tweets_df &lt;- tbl_df(map_df(obama_tweets, as.data.frame))</code></pre>
+<p>Now we’ll count word frequencies for both of them and create word clouds.</p>
+<div id="for-trump" class="section level2">
+<h2>For Trump</h2>
+<pre class="r"><code>tweets &lt;- trump_tweets_df
+
+reg &lt;- &quot;([^A-Za-z\\d#@&#39;]|&#39;(?![A-Za-z\\d#@]))&quot;
+tweet_words &lt;- tweets %&gt;%
+  filter(!str_detect(text, &#39;^&quot;&#39;)) %&gt;%
+  mutate(text = str_replace_all(text, &quot;https://t.co/[A-Za-z\\d]+|&amp;amp;&quot;, &quot;&quot;)) %&gt;%
+  unnest_tokens(word, text, token = &quot;regex&quot;, pattern = reg) %&gt;%
+  filter(!word %in% stop_words$word,
+         str_detect(word, &quot;[a-z]&quot;))
+
+tweet_words &lt;- tweet_words %&gt;% group_by(word) %&gt;% tally() %&gt;% mutate(freq = n) %&gt;% select(word, freq) %&gt;% arrange(desc(freq))
+
+tweet_words %&gt;% head(20) %&gt;% kable(row.names=TRUE)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="left">word</th>
+<th align="right">freq</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td align="left">news</td>
+<td align="right">48</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td align="left">fake</td>
+<td align="right">47</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td align="left">people</td>
+<td align="right">44</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td align="left">jobs</td>
+<td align="right">43</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td align="left">media</td>
+<td align="right">43</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td align="left">america</td>
+<td align="right">40</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td align="left">obamacare</td>
+<td align="right">38</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td align="left">election</td>
+<td align="right">34</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td align="left">time</td>
+<td align="right">33</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td align="left">country</td>
+<td align="right">30</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td align="left">democrats</td>
+<td align="right">30</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td align="left">join</td>
+<td align="right">30</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td align="left">american</td>
+<td align="right">28</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td align="left">president</td>
+<td align="right">28</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td align="left">healthcare</td>
+<td align="right">26</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td align="left">trump</td>
+<td align="right">26</td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td align="left">bad</td>
+<td align="right">25</td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td align="left">hillary</td>
+<td align="right">25</td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td align="left">north</td>
+<td align="right">24</td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td align="left">#draintheswamp</td>
+<td align="right">23</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>wordcloud2(tweet_words, size = 0.6)</code></pre>
+<div id="htmlwidget-d8777f13e1b5f429c19e" style="width:768px;height:480px;" class="wordcloud2 html-widget"></div>
+<script type="application/json" data-for="htmlwidget-d8777f13e1b5f429c19e">{"x":{"word":["news","fake","people","jobs","media","america","obamacare","election","time","country","democrats","join","american","president","healthcare","trump","bad","hillary","north","#draintheswamp","russia","honor","obama","day","forward","story","united","@nytimes","vote","watch","florida","tax","@whitehouse","win","clinton","china","congratulations","meeting","washington","dems","job","night","women","wonderful","coming","enjoy","failing","happy","hard","national","security","tomorrow","deal","john","#maga","repeal","replace","republicans","tonight","total","world","wrong","administration","border","business","carolina","@cnn","#icymi","live","minister","plan","support","campaign","change","companies","crooked","disaster","house","interviewed","korea","melania","morning","pence","prime","real","secretary","terrible","totally","executive","money","polls","press","rally","report","white","yesterday","beautiful","beginning","#bigleaguetruth","called","comey","dead","evening","fbi","@flotus","@foxnews","illegal","james","judge","leaders","lost","massive","stop","taking","tickets","badly","ban","confidence","continue","countries","court","#debate","decision","future","happening","honored","intelligence","iran","mexico","military","optimism","party","pennsylvania","premiums","ready","sad","saturday","trade","@vp","afternoon","angry","apologize","attack","billion","cabinet","call","care","days","dollars","finally","@foxandfriends","government","immigration","including","insurance","january","level","lie","nice","republican","results","safe","strong","talk","#thankyoutour2016","winning","won","worse","agreed","bringing","chuck","classified","conference","dishonest","family","fight","focus","happen","information","love","memorial","mess","mike","movement","@nbcnews","#obamacare","ohio","paid","phony","play","playing","political","presidential","proud","released","russian","safety","save","schumer","speech","stand","statement","top","true","wall","week","20th","abc","act","address","air","allowed","amazing","#americafirst","biased","bill","billions","build","ceo's","clapper","close","congress","control","crowd","deductibles","east","economic","elect","exciting","excuse","expected","false","fast","federal","ford","foreign","free","hacking","heroes","history","hope","info","iowa","isis","keeping","kentucky","law","leakers","leaking","lies","lincoln","lot","meetings","millions","nbc","#obamacarefail","plant","record","reform","remember","remembrance","ridiculous","run","senate","signed","stated","supreme","team","tremendous","trouble","usa","#usa","victory","watching","wisconsin","4pm","7pm","ahead","al","americans","announced","australia","bail","begins","brave","buy","cast","ceo","collusion","complete","cover","coverage","cuts","debate","democrat","director","dnc","dr","drug","drugs","easily","expensive","failed","families","fired","fix","force","france","friday","game","growth","health","hear","@hillaryclinton","home","horrible","imagine","industry","interview","iraq","israel","joint","justice","kennedy","life","losing","major","#makeamericagreatagain","meet","middle","nation","nato","notice","office","orlando","pay","peace","plans","#potusabroad","pouring","'presidential","progress","protect","race","reasons","representing","rex","rigged","russians","sources","speak","special","spent","spirit","start","started","stronger","surveillance","syria","system","talking","tennessee","terrorism","terrorist","tillerson","transition","'trump","truth","voted","war","weekly","wh","worst","wow","30pm","action","acts","advisor","affordable","agenda","ago","apprentice","arabia","army","association","based","bean","behalf","bigger","biggest","blame","bob","borders","brought","building","calls","campaigned","campaigning","canada","cancelled","car","caught","celebrate","chairman","changed","charge","chicago","children","cia","cities","class","clinton's","cnn","college","colorado","committed","community","complaining","computer","condolences","continues","create","creating","crimea","crowds","death","defeat","defense","deficits","deliver","delivered","dept","difficult","dinner","djt","economy","egypt","electoral","enemy","europe","event","extreme","fair","#fakenews","fantastic","fayetteville","fill","final","fixing","forgotten","foundation","fox","fraud","friend","friends","fun","funny","g7","georgia","gorsuch","hacked","hamilton","heard","helping","hershey","hillary's","hit","hits","holocaust","honoring","hrc","human","hunt","illegally","imploding","inauguration","increases","indiana","international","japan","kansas","korean","leading","leaks","lewis","listening","lives","louisiana","manufacturing","mattis","mention","met","missile","month","months","nashville","network","nsa","paris","picked","pm","podesta","politics","poll","post","potential","power","presidency","presidents","prior","process","promise","questions","ratings","reason","recent","relationship","remarks","#repealandreplace","respect","rules","running","sanctuary","sanford","saudi","scam","scandal","senators","serve","service","session","shut","sisi","situation","smart","solve","spend","spiral","stay","step","stories","study","super","supporters","sweden","tallahassee","tampa","teacher","tears","terrorists","today's","trip","trump's","understand","unmasking","veterans","vetting","voter","voters","votes","watched","weak","wealth","weekend","#weeklyaddress","wilmington","witch","words","yates","00pm","10am","8th","abe","absolute","accepted","accountability","accuracy","additional","advantage","agree","aides","alabama","allegations","aluminum","andrew","announcement","answer","anymore","approval","arizona","arrived","ashamed","assange","attending","attorney","augustine","ballistic","battlefield","beat","bedminster","bernie","birthday","bless","blumenthal","board","boeing","book","bowl","budget","built","bush","california","canadian","cancel","candidates","careful","caucus","center","challenge","chief","chris","circuit","civil","clearance","coach","@commercegov","committee","company","competition","conditions","#confirmgorsuch","congrats","congressional","congressman","conspiracy","construction","consumer","contact","cost","costs","counsel","county","crazy","creation","credibility","crime","criminal","criminals","critical","#crookedhillary","cut","dangerous","daughter","dealers","deals","debates","#debates","decades","defend","delay","denver","des","discuss","discussion","disrespect","doctor","dog","donald","donors","dream","eastern","easy","effect","elections","energy","enforcement","entire","eric","estes","evidence","evil","experience","explained","extremely","exxonmobil","@exxonmobil","fabricated","facebook","farmers","field","fire","fireworks","fleeing","flynn","follow","fools","form","fought","freedom","#g7summit","gang","garden","germany","gitmo","giving","god","#godblesstheusa","governor","greatly","green","guilty","guy","hatred","head","heading","held","hero","highly","hike","historic","hold","homeland","horrifying","hosted","hurt","immediately","immigrants","importance","impossible","inaccurate","#inauguration2017","infested","intentions","investment","islamic","issues","ivanka","jackson","@jim","@jimbrownnfl32","joined","joke","jordan","journey","julian","@justintrudeau","keith","killed","kraft","labrador","lake","lead","leader","leadership","leaker","leave","leaving","liberal","libya","lifted","likes","line","lines","list","london","looked","lose","losses","lots","louisville","loves","lower","makes","#marchforlife","mark","masa","matter","matters","mayor","mcmaster","melbourne","miami","michigan","@mike","missed","mistake","mistakes","mobile","moines","moment","monday","montana","mosul","motors","move","moving","museum","#nabtu2017","nafta","@nasa's","#nato","navy","@ncgop","negative","negotiated","neil","@netanyahu","ninth","nominate","nomination","nominee","november","nuclear","numerous","ocare","officers","official","opinion","orange","@oreillyfactor","organized","overturned","page","pass","#passthebill","patriots","paul","paying","person","personally","phase","picks","planned","policies","policy","poor","pope","popular","position","positions","pour","practices","predicted","preserving","@presidentruvi","priority","proclamation","production","program","project","properly","prosperity","protection","protesters","puerto","purchases","push","pushed","quickly","rallies","ran","rapidly","@raul","reach","reading","recieved","recovery","refugees","refuses","regulations","remembered","rep","@repmarkmeadows","reporting","reports","representatives","respected","rest","returned","returns","rice","rico","rise","#riyadhsummit","roger","rollout","ron","rose","rude","rush","ryan","sacrifice","sadly","sake","sally","sanders","saved","scale","senator","september","share","shooting","sided","society","space","speaking","spied","spoken","st","stadium","standard","standing","statements","steelworkers","steven","strengthening","strongly","sunday","surged","sworn","talks","taxes","teachers","term","terminate","thanksgiving","theater","thrilled","times","tom","tonight's","tower","trafficking","transferring","'u","ukraine","ultimate","unable","unbelievable","unleash","unprecedented","upset","urban","@usedgov","vast","vatican","vietnam","view","violence","visit","wallace","@washingtonpost","weeks","wife","winners","winter","woman","women's","workers","workforce","wounded","@wwp","00am","11pm","11th","12pm","1pm","36th","3pm","5pm","@60minutes","#6days","6pm","75th","7p","@abc","ability","accomplish","accord","accumulation","accurately","achievements","acquire","active","activists","add","added","admin","admitted","advised","advisory","aetna","'aetna","afraid","african","afternoons","aggrieved","agreement","agriculture","#ahca","aimed","@ainsleyearhardt","airline","airport","airports","airs","album","alienssave","alike","allies","allis","alternatives","ambassador","ambassadors","ambushed","americ","@american32","'americans","#americanunity","america's","amounts","analysis","anarchists","angela","animals","anniversary","announce","announcing","annual","answers","antiquities","apologized","appalled","appointed","approaching","approved","approving","april","aptitude","arab","argentina","arguing","arlene","arlington","armed","arnold","asia","asian","astronauts","@astropeggy","atlanta's","attacked","attempt","attention","august","australians","auto","awada","award","aya","baby","bailing","baja","ballots","barack","barbara","baton","bay","bear","beautifully","beauty","beef","begged","begin","behal","behaving","behavior","belgium","belichick","believes","ben","benefits","benghazi","benjamin","berkeley","betray","@betsydevos","@betsydevosed","betwe","bikers","@billgates","bills","blasts","blazing","blessings","blind","blocking","bloomberg","bobby","boldly","booths","boston","bowden","boycotted","brady","brand","bravery","bravest","break","breakdown","brennan","briefing","briefings","brilliant","bring","brings","britain","british","broadcast","broke","brother","brussels","#buildthewall","bull","burdens","burning","bus","busineses","businesses","busy","calm","camera","cameras","camp","candy","capable","capitol","card","career","carefully","careless","carrier","cars","carson","cartels","carter","castro","catch","caused","causing","@cbnnews","@cbs","celebrates","celebrating","cemetery","#ceotownhall","ceremony","certified","#cgacommencement17","ch","#chagsameach","challenger","chamber","chance","chancellor","charade","charged","charges","charities","charity","charleston","charlotte","check","chevy","chiefs","chief's","choice","choices","choose","choosing","chosen","christian","christians","circulated","citing","citizens","civilization","civilized","claim","claims","clean","closing","clown","clowns","clue","coal","coast","cochran","coffers","collapse","colluded","colombia","comeback","comfort","commander","commerce","commission","compare","compared","complaints","conceded","conceived","concert","concord","condemns","condoleezza","conf","conflict","conflicts","confront","#congratspeggy","congratulating","congressioal","connecticut","connection","conquests","consecutive","considerably","consideration","considered","contract","contributions","controlled","controls","conversation","conversations","conviction","core","corolla","correctly","correspondents","corrupt","corruption","council","courage","courts","covered","cpac","crackdown","crafted","crash","crew","cried","cruze","cryin","cuban","culture","currency","customers","cybersecurity","dairy","danger","data","date","david","dealing","dealmaker","'death","debt","decade","december","decide","decides","dedication","deeds","deep","deeply","defeated","delayed","delaying","delays","delegates","deleted","delivering","delta","dem","demeaning","democracy","democratic","'democratic","demoralized","denmark","denounce","deny","departing","deport","@deptvetaffairs","describe","designations","destruction","details","detained","detective","determine","determined","detroit","devastating","developing","development","devised","devote","died","dies","difficulties","dignified","dignity","diplomats","dir","disastrous","discredited","disdain","disgrace","disgraced","dishonesty","disparaging","disregard","disrespected","disruption","distorting","district","districts","divided","division","document","don","'donald","@donaldjtrumpjr","dossier","double","doubt","dow","driving","#dts","duck","dudes","dues","dumb","dwindling","earlier","earned","earth","easter","'economists","ed","edge","edges","education","effective","electing","electronic","elevation","eleventh","eli","ellison","emails","emmanuel","employees","empowerment","empty","enact","@endakennytd","endorsement","enemies","energies","enforcing","engage","engaged","engineers","enhances","enjoyed","enjoyment","enlisting","enrich","enter","enterprise","enthusiasm","enthusiastic","environment","environmental","eo","eo1","eo2","eo's","'epidemic","equal","era","erdo","essentially","establishment","ethics","evancho's","evenings","eventually","everyday","examination","excitement","exclusive","executed","executives","exist","existing","exists","exit","expenses","explode","explorers","explores","express","extended","eyes","fabled","fabric","@facethenation","fading","fail","failure","falcons","fall","falling","falsely","fame","fan","farage","@fbi","february","feel","fees","fheile","fiction","fictitious","fidel","fighting","finalists","fine","finest","firebombed","firing","fit","fitting","fixed","fl","flee","flight","flipping","fm","focused","fold","forced","forces","forests","forget","forgiveness","formally","formation","formed","forum","foster","found","foundations","founded","@foxbusiness","@foxnewssunday","fraction","francis","frankly","frauds","fri","friendship","fro","frontiers","fumed","funded","funds","funeral","futures","#g7","#g7taormina","gangs","garbage","garners","gas","gdp","gen","general's","generations","geneva","genius","george","german","giorgi","glenn","glorious","gm","goodwill","governing","governments","graham","grand","graydon","guess","guests","gulf","gun","guys","hackers","hacks","hall","halt","hand","handle","happened","#happynewyear","harassed","harbor","harry","hashtag","haven","hearing","heart","heavily","hel","hell","henry","heroic","@hillaryclinton's","hire","hires","hiring","hispanic","hoax","holding","holiness","honesty","honorably","horror","hospitalized","host","hosting","hours","@housegop","housing","hud","humana","humanitarian","hundreds","husband","hypocrites","'ice","identifying","iii","illegals","immunity","impact","imports","impressive","improvements","improving","#imwithyou","inaccurately","inaugural","#inauguration","#inaugurationday","inclusion","incoming","incorrectly","increase","incredible","independent","index","indignant","industrial","indv","inexpensive","infighting","infiltrated","inflammatory","infrastructure","ingrained","inherited","innocent","innovation","ins","insiders","inspired","instincts","instructed","integrity","intel","intensity","interfere","@interior","intro","invest","investigated","invitation","invite","ireland","irish","islanders","@israelipm","italy","@ivankatrump","jackie","jail","@jclayfield","'jeff","jeopardizing","jinping","johndaly","joining","jones","juan","@judgejeanine","judgement","juliana","jump","june","jury","justification","kellogg","kelly","key","kill","kimberly","king","kingdom","kinston","kke","knowing","knowingly","knowledge","knowles","kravis","kurt","kvirikashvili","la","labor","ladd","lady","lago","lakes","land","lara","lars","@larsloekke","lasting","laughable","laughing","launched","lavrov","laws","lawsuit","lawyers","@lbperfectmaine","leaked","left","legend","legislation","legislative","legs","leopoldo","letter","levels","libel","@libertyu","lied","lifeline","lifetime","lift","light","likewise","@liliantintori","limbaugh","linda","lindsey","lining","linkedin","#liub","liyuan","ll","locked","lockheed","looms","lopez","loss","lou","@loudobbs","lousy","louvre","loved","low","luck","luther","ma","machine","macron","mad","'mad","madame","magazine","magnet","mail","mailbox","mails","main","mainstream","manage","manchester","mandated","manipulator","manuel","'manufacturing","mar","marching","@marcorubio","marginalize","@mariabartiromo","market","markets","marking","@marthamaccallum","martin","mattarella","@mauriciomacri","@mayorbowser","mccain","mcdonald","mcgarvey","meantime","medical","meltdown","memorandum","#memorialday","menace","merkel","messy","metro","mexican","mi","mia","mic","michael","michiga","miller","milwaukee","minds","mine","miners","mining","minnesota","minute","mired","mishandled","missiles","mnuchin","mo","model","moderator","mothers","mother's","#mothersday","motor","ms","@msnbc","mtgs","multiple","murder","murders","museum's","naive","named","names","nancy","nasty","#nationalagday","#nationaldayofprayer","#nationalpoliceweek","nations","nationwide","#natomeeting","natural","navarro","@nbc","@nbcnightlynews","@nbcsnl","negotiate","negotiation","neighbor","networks","#neverforget","newspapers","nfl","nh","@nigel","nominated","nukes","nyc","@oann","oath","'obama","#obamacarefailed","#obamacareinthreewords","obstruct","obstruction","obvious","october","offer","offers","officially","officials","op","openings","openly","operative","operatives","opponents","oppose","opposed","opposite","opposition","optimistic","outage","outcomes","outcry","outgoing","outlets","outrage","overrated","overtime","overwhelmingly","owed","owens","owes","pa","pacific","panel","parent","parks","parties","partnership","passion","passover","past","path","pause","pavlo","payments","peac","#peaceofficersmemorialday","pearl","peebles","pelosi","peng","pensacola","perfect","performance","peril","permeated","pertaining","peter","@pga","phadraig","phoney","photo","picture","pigs","pioneer","pivot","plants","player","players","pledge","plummeting","podium","poisoning","pol","police","#policeweek","politician","poorly","posing","positive","potus","#potus7","powerful","practically","praise","prayers","praying","pre","premium","preparations","prepare","prepared","pres","'president","prestige","pretend","price","pricing","primaries","principles","prisoner","prisoners","private","pro","probe","producers","product","productive","products","professional","prohibitions","promises","promote","promoting","proof","properties","proportion","prosperous","protecting","proven","proves","proving","public","pull","pundits","purely","pursue","pushing","putin","question","questioning","quid","quo","radical","raise","raised","#rallyforriley","ranchers","@randpaul","rapids","rasmussen","rate","rates","rating","reached","reaching","read","readers","#readthebill","@realbencarson","rebuild","rebuilding","receive","received","receiving","recently","recep","recognize","recorded","recounts","red","reduce","reducing","reduction","reductions","reed","reference","refused","refusing","region","regulation","regulatory","reiterated","relationships","releases","releasing","religious","'remarks","removal","removed","renegotiate","renew","renewal","renews","rent","@repcummings","repealing","#repealobamacare","@repkenbuck","replaced","replacement","replacing","replay","reported","reporter","represent","@republicanstudy","requested","reset","resolution","resolve","respectfully","respects","responded","responders","responses","responsible","restore","restored","retail","returning","review","'review","rexnord","richard","richie","rid","ride","riyadh","rnc","road","roadblocks","rocketry","role","roles","rosie","rouge","@rudygiuliani","rule","rulers","rulings","runways","rural","sacred","salaries","sales","@samsung","sanctions","santos","sara","sat","saves","sb","schedule","scheduled","scheme","school","#schoolchoice","schwarzenegger","scientists","#scotus","scranton","scrapping","sean","searching","seats","sec","@secpricemd","secret","secretaries","@secretaryross","sector","secure","seldom","selection","selflessly","sell","selma","@senateyouth","send","sending","sense","senses","separately","sergei","sergio","served","servers","servicemen","serving","sessions","set","setting","settled","shape","shinzo","shopping","shot","shots","shown","shulkin","shutdown","shuttle","sign","signing","signings","signs","simple","simply","single","sky","skyrocket","skyrocketed","skyrocketing","slanted","slash","sleazebag","sleepy","sleeves","slowest","smarter","smithsonian's","smooth","smoothly","sniper","@snoopdogg","soaring","social","soft","softbank","sold","soldier","#soldierridedc","solid","solidarity","somalia","sooner","source","'sources","south","southern","'sp","speeches","speed","speedy","spoke","spotlight","springfield","spurs","spy","squandered","stages","stake","star","starting","starts","statutory","steel","stephen","steps","stock","stone","stood","stopping","storm","straight","straightening","strange","strategic","streak","stream","strength","strongest","struck","stuff","subcommittee","subject","submitted","subpoenaed","subscribers","subsidies","success","successes","successful","successfully","sudan","sued","suggest","summer","summit","sums","#superbowl","supported","supposedly","surrogate","surrogates","surrounded","survey","susan","swearing","sweeping","swing","tabulation","takes","talent","talented","tanking","taoiseach","taormina","tapes","#tarc","tariffs","taxpayer","tayyip","technical","television","telling","terms","terror","testify","texas","#thankaveteran","thankful","thanking","@thealabamaband","@thebrodyfile","@theleegreenwood","theories","theory","theresa","thousands","thr","threat","threaten","threats","thugs","thur","thursday","tired","@todayshow","todd","told","toledo","tone","tool","topics","tour","tourists","toyota","tpp","transcript","transfer","@transition2017","travel","treasury","treated","trial","trillion","triple","troll","troops","trophy","truckers","trucking","trudeau","#trumppence16","@tuckercarlson","tue","tuesday","tumbling","tuned","turkey","@turnbullmalcolm","tweet","types","typical","typically","unaffordable","undoing","unfair","unfit","unforgettable","unhappy","university","unlike","unmasked","unmatched","unnecessary","unsuccessfully","untrue","untrusting","unwatchable","update","@uscgacademy","useless","@usnavy","usss","usual","va","vacations","@vanityfair","#vasecretary","venezuela","vets","vice","vicious","victims","victories","victorious","video","virtually","vital","voice","voting","vows","vp","w20","walmart","walter","warm","warn","warned","warrior","warriors","watc","watchdog","water","weakening","weapon","weapons","web","wednesday","weight","welcomed","west","whistleblower","wi","wiedefeld","wikileakes","wikileaks","winner","wins","wishes","wishing","woodward","word","worker","#worldautismawarenessday","world's","worry","worth","writers","writes","writing","written","xi","yemen","york","youth","zealand","zilch"],"freq":[48,47,44,43,43,40,38,34,33,30,30,30,28,28,26,26,25,25,24,23,23,22,21,20,20,20,20,19,19,19,18,18,18,18,17,16,16,16,16,15,15,15,15,15,14,14,14,14,14,14,14,14,13,13,13,13,13,13,13,13,13,13,12,12,12,12,12,12,12,12,12,12,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,10,10,10,10,10,10,10,10,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"fontFamily":"Segoe UI","fontWeight":"bold","color":"random-dark","minSize":0,"weightFactor":2.25,"backgroundColor":"white","gridSize":0,"minRotation":-0.785398163397448,"maxRotation":0.785398163397448,"shuffle":true,"rotateRatio":0.4,"shape":"circle","ellipticity":0.65,"figBase64":null,"hover":null},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="for-obama" class="section level2">
+<h2>For Obama</h2>
+<pre class="r"><code>tweets &lt;- obama_tweets_df
+
+reg &lt;- &quot;([^A-Za-z\\d#@&#39;]|&#39;(?![A-Za-z\\d#@]))&quot;
+tweet_words &lt;- tweets %&gt;%
+  filter(!str_detect(text, &#39;^&quot;&#39;)) %&gt;%
+  mutate(text = str_replace_all(text, &quot;https://t.co/[A-Za-z\\d]+|&amp;amp;&quot;, &quot;&quot;)) %&gt;%
+  unnest_tokens(word, text, token = &quot;regex&quot;, pattern = reg) %&gt;%
+  filter(!word %in% stop_words$word,
+         str_detect(word, &quot;[a-z]&quot;))
+
+tweet_words &lt;- tweet_words %&gt;% group_by(word) %&gt;% tally() %&gt;% mutate(freq = n) %&gt;% select(word, freq) %&gt;% arrange(desc(freq))
+
+tweet_words %&gt;% head(20) %&gt;% kable(row.names=TRUE)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="left">word</th>
+<th align="right">freq</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td align="left">senate</td>
+<td align="right">68</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td align="left">#doyourjob</td>
+<td align="right">61</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td align="left">leaders</td>
+<td align="right">57</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td align="left">president</td>
+<td align="right">50</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td align="left">obama</td>
+<td align="right">48</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td align="left">court</td>
+<td align="right">43</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td align="left">supreme</td>
+<td align="right">42</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td align="left">#actonclimate</td>
+<td align="right">40</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td align="left">climate</td>
+<td align="right">39</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td align="left">change</td>
+<td align="right">35</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td align="left">judge</td>
+<td align="right">33</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td align="left">garland</td>
+<td align="right">27</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td align="left">hearing</td>
+<td align="right">25</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td align="left">add</td>
+<td align="right">21</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td align="left">economy</td>
+<td align="right">20</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td align="left">progress</td>
+<td align="right">20</td>
+</tr>
+<tr class="odd">
+<td>17</td>
+<td align="left">agree</td>
+<td align="right">19</td>
+</tr>
+<tr class="even">
+<td>18</td>
+<td align="left">join</td>
+<td align="right">19</td>
+</tr>
+<tr class="odd">
+<td>19</td>
+<td align="left">fair</td>
+<td align="right">18</td>
+</tr>
+<tr class="even">
+<td>20</td>
+<td align="left"><span class="citation">@ofa</span></td>
+<td align="right">18</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>wordcloud2(tweet_words, size = 0.6)</code></pre>
+<div id="htmlwidget-563c935f03d99d2816f9" style="width:768px;height:480px;" class="wordcloud2 html-widget"></div>
+<script type="application/json" data-for="htmlwidget-563c935f03d99d2816f9">{"x":{"word":["senate","#doyourjob","leaders","president","obama","court","supreme","#actonclimate","climate","change","judge","garland","hearing","add","economy","progress","agree","join","fair","@ofa","team","americans","support","time","truth","jobs","congress","live","vacancy","fill","health","#obamacare","#scotus","watch","american","country","deadline","gun","people","vote","act","chance","enter","fight","millions","care","violence","boards","bold","#disarmhate","editorial","read","record","speak","speaking","action","address","chicago","deserves","#getcovered","million","months","nomination","obstruction","political","rate","stay","unacceptable","weekly","energy","job","meet","protect","stand","#wearorange","clean","day","fighting","global","hard","james","partisan","politics","stop","taylor","calling","chip","common","dangerous","delivering","economic","fundraising","future","games","garland's","happy","movement","plan","power","real","service","uninsured","voice","women","ago","agreement","america","america's","breaking","broken","build","building","call","check","communities","continue","equality","families","fought","informed","installations","majority","misinformation","month","obamacare","organizing","partisanship","past","play","process","proud","qualified","#raisethewage","records","reproductive","step","summer","supporters","thousands","tonight","added","affordable","ahead","association","bar","bipartisan","chief","choices","coast","coverage","cut","days","deal","discuss","discusses","easy","ed","enrollment","federal","free","functioning","gain","growth","happening","heat","helped","helping","hold","household","hundreds","improve","justices","#leadonleave","legislation","level","love","makes","merrick","@michelleobama","miss","national","news","obama's","obstructionists","op","#parisagreement","pitch","poverty","pressure","private","push","pushing","quality","remain","remarks","reminder","row","sector","sense","shameless","share","solar","starts","statement","steps","straight","strength","stronger","tackle","taking","tomorrow","tune","united","unprecedented","wear","#whcd","win","#womensequalityday","100th","access","afford","annual","basic","biden","blocked","blocking","businesses","capacity","carbon","challenge","children","chuck","coming","commander","commemorates","community","conditions","constitutional","continues","conversation","countries","created","cynical","cynics","dallas","de","denial","deniers","denying","deserve","difference","duty","effects","efforts","elkhart","engaged","epidemic","existing","fairly","fallen","family","@flotus","focus","football","forward","friend","gender","generations","hand","healthier","hear","heard","highlighting","highly","#hispanicheritagemonth","historic","history","hit","home","icymi","idly","ignore","income","indiana","insurance","joins","justice","landmark","largest","late","leadership","leave","lives","london","lot","#loveislove","manchester","mark","marketplace","matters","memorial","message","midnight","mind","minimum","momentum","money","nations","nationwide","@natlparkservice","noise","nominee","nominees","normal","november","obstructing","obstructionism","ofa","officers","#ourocean","overwhelming","paid","percent","plans","playing","police","policies","policy","pollution","positive","pre","precedent","previous","professor","protecting","quick","rating","ready","reception","recess","recognized","reflects","refusal","refusing","renewable","republicans","resilience","rights","ruling","safer","save","school","security","senate's","senator","senators","session","shop","shoulder","sick","sign","standing","started","strong","system","takes","tonight's","#tpp","track","treatment","tripped","undeniable","#unga","victims","wage","wait","week","women's","workers","world","71st","@abc","abortion","abre","abroad","aca","accept","accident","accomplished","accomplishment","acres","actively","activity","adding","adults","adversity","agre","air","ally","alternative","ana","anniversary","answered","assembly","average","aviation","awareness","baton","bears","beat","beating","begins","bench","benedikt","benefited","berry","bil","billion","birthday","blind","boosting","bowser","british","built","bumped","byers","called","calm","cappe","carry","caused","@ceachair","celebrate","celebrating","chang","changing","character","charged","@chci","child","children's","choose","claims","class","combat","combating","comeback","comedian","compete","completely","condolences","conference","confirmation","confirmed","congrats","congratulations","consequences","consideration","continued","continuing","contribute","conversations","corps","couch","council","country's","covered","create","credentials","credible","critical","crucial","cubiertos","customers","#dallasmemorial","data","decades","decided","defend","deficit","deliver","delivered","demand","democracy","demographics","denied","denouncing","depends","derail","diplomatic","discussion","dreamers","drive","drop","drowned","durable","dyk","#eastereggroll","economics","education","edward","efficiency","el","embrace","enables","engines","england","enjoy","ensure","enters","equally","essential","est","evidence","excited","experience","experiencing","explains","extreme","factor","fairness","faith","falling","familia","#farewelladdress","farm","faster","fastest","fear","feels","fell","feminist","field","fifteen","filiz","filling","#firstdayoffall","fist","flight","flint","floating","fluff","fluke","force","forever","fossil","foundations","fourth","#fourthofjuly","freedoms","friday","friends","fuel","functional","functionality","furman","gains","game","garl","gas","ghost","girls","globally","globe","goal","@govrichardson","grab","grandchildren","grassroots","grateful","guarantee","half","hall","hamstringing","handicapping","handle","#happyanniversary","#happyhalloween","hardworking","harry","heading","headway","healthy","heart","hearts","heavy","held","helps","holding","homes","honor","honors","hope","hopes","hotel","house","human","humbled","ida","ideas","ignoring","imani","impact","impacting","impeccable","inbox","incomes","increase","independent","inspired","insured","integrity","interfaith","international","interview","investments","irresponsible","island","issues","jason","jeopardize","jimmy","jobless","#jobsreport","journey","judgeships","judicial","july","june","kicked","kids","killed","la","labor","land","lands","laugh","law","laws","lays","leader","left","legacy","legend","legendary","lesson","#letgirlslearn","letters","lions","ll","locally","lock","loud","louder","loved","low","lowest","ma","major","march","market","marks","marriage","matter","mayor","meaningful","meantime","measure","medal","median","meets","mercado","merecen","met","metric","miami","michelle","michigan","middle","miles","#millionsolarstrong","moments","monday's","mothers","mother's","moves","music","myths","nationally","nation's","night's","ninth","nominated","northwestern","note","#nps100","@nytimes","@nytopinion","@obamacare","#obamafarewell","obstruct","ocean","october","offer","offshore","one's","operator","opportunities","opportunity","options","organize","original","outlets","overcome","overcomplicate","overly","parents","parent's","paris","participating","partner","passed","paycheck","paychecks","pays","peace","perform","petty","pm","pointers","policing","politicization","powers","praises","prayer","prayers","predicted","prevent","prevention","pride","prince","privilege","#profileincourage","progressive","prosperity","proudest","pump","putting","raised","raising","reach","reached","reaffirms","reality","recent","#recoveryact","reduce","reform","refuse","regard","report","republican","require","resolve","responsibilities","responsibility","restore","restoring","restrictions","restrictive","retweet","rhode","road","rolled","rolling","rouge","rules","running","saber","sacrifice","satisfied","scared","scientists","searching","seat","secretary","seek","seguros","@senatemajldr","senior","@senwarren","set","sets","setting","shake","shameful","shedding","shooting","short","shown","sierra","signal","signed","signing","silence","silent","simple","single","sit","sleeves","slowing","solid","solve","speaks","special","spending","square","standards","#standwithwomen","start","streak","street","stretch","strongest","struck","style","su","successes","suit","sum","super","survey","survivors","tackles","talking","teacher","tens","terror","texas","thinking","thirty","threaten","tickets","tiggers","timely","time's","today's","tomorrow's","tons","top","touch","tough","town","trade","tranquilidad","travels","treated","treating","trip","trucks","tunes","uk","unchallenged","unconscionable","unconstitutional","undeniably","undercut","underestimate","unemployment","unrecognizable","updates","uphold","usted","vacant","vacation","valentine","vice","visit","@vp","wages","waited","waiting","wall","warfare","water","waters","white","wildfires","wind","woman","woman's","wonderful","wounded","wrapped","@wsj","yesterday","york"],"freq":[68,61,57,50,48,43,42,40,39,35,33,27,25,21,20,20,19,19,18,18,18,17,16,16,16,15,14,14,14,13,13,13,13,13,12,12,12,12,12,12,11,11,11,11,11,10,10,9,9,9,9,9,9,9,9,8,8,8,8,8,8,8,8,8,8,8,8,8,8,7,7,7,7,7,7,6,6,6,6,6,6,6,6,6,6,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"fontFamily":"Segoe UI","fontWeight":"bold","color":"random-dark","minSize":0,"weightFactor":1.58823529411765,"backgroundColor":"white","gridSize":0,"minRotation":-0.785398163397448,"maxRotation":0.785398163397448,"shuffle":true,"rotateRatio":0.4,"shape":"circle","ellipticity":0.65,"figBase64":null,"hover":null},"evals":[],"jsHooks":[]}</script>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
