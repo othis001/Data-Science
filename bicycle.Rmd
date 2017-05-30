@@ -27,7 +27,7 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 
 ```
 
-First we'll do a geometric desity plot by date.
+First we'll do a geometric density plot by date.
 
 ```{r} 
 

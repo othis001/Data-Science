@@ -204,7 +204,7 @@ $(document).ready(function () {
 
 
 <p>The purpose of this project is to analyze times of bicycle rentals. We’ll use the R libraries <em>dplyr</em>, <em>ggplot2</em>, <em>lubridate</em>, as well as the <a href="http://tiny.cc/dcf/2014-Q4-Trips-History-Data-Small.rds">2014-Q4-Trips-History-Data-Small.rds</a> data set.</p>
-<p>First we’ll do a geometric desity plot by date.</p>
+<p>First we’ll do a geometric density plot by date.</p>
 <pre class="r"><code>Trips %&gt;%
   ggplot(aes(x =sdate)) + geom_density()</code></pre>
 <p><img src="bicycle_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>

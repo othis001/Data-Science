@@ -5,3 +5,6 @@ output: html_document
 ---
 
 This website is a collection of Data Science projects.
+
+* [Wrangling and Plotting](wrangling.html) Projects related to data wrangling and plotting.
+* [Machine Learning](learning.html) Projects related to machine learning.
