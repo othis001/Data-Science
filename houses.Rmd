@@ -1,5 +1,5 @@
 ---
-title: "House Prices"
+title: "Housing Prices"
 author: "Oliver Thistlethwaite"
 output: html_document
 ---

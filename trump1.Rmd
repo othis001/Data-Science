@@ -1,5 +1,5 @@
 ---
-title: "Trump vs Obama in Twitter Word Frequencies"
+title: "Trump vs Obama Twitter Analysis"
 author: "Oliver Thistlethwaite"
 output: html_document
 ---
@@ -18,7 +18,7 @@ setup_twitter_oauth(consumer_key, consumer_secret, access_token, access_secret)
 
 ```
 
-In this project, we will compare the word frequencies in twitter messages from Trump and Obama. First we will read in the required libraries.
+In this project, we will compare bigrams and word frequencies in twitter messages from Trump and Obama. First we will read in the required libraries.
 
 ```{r, warning = FALSE, message=FALSE}
 
@@ -29,6 +29,10 @@ library(twitteR)
 library(tidytext)
 library(stringr)
 library(wordcloud2)
+library(tidyr)
+library(ggplot2)
+library(igraph)
+library(ggraph)
 
 ```
 
@@ -36,7 +40,7 @@ To set up *TwitteR*, please see [R Bloggers](https://www.r-bloggers.com/setting-
 
 Now we'll load the last 3200 tweets from each of Trump and Obama. Note the number of tweets will be less since we are excluding retweets.
 
-```{r, warning = FALSE, message=FALSE}
+```{r, warning = FALSE, message=FALSE, cache = TRUE}
 
 trump_tweets <- userTimeline("realDonaldTrump", n=3200)
 trump_tweets_df <- tbl_df(map_df(trump_tweets, as.data.frame))
@@ -46,9 +50,43 @@ obama_tweets_df <- tbl_df(map_df(obama_tweets, as.data.frame))
 
 ```
 
-Now we'll count word frequencies for both of them and create word clouds.
+# For Trump
 
-## For Trump
+
+## Bigrams
+
+First we'll look at bigrams contained in Trump's twitter messages.
+
+```{r, fig.width=12, fig.height = 12, warning = FALSE}
+
+count_bigrams <- function(dataset) {
+  dataset %>%
+    filter(!str_detect(text, '^"')) %>%
+    mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+    unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+    separate(bigram, c("word1", "word2"), sep = " ") %>%
+    filter(!word1 %in% stop_words$word, !word2 %in% stop_words$word) %>%
+    count(word1, word2, sort = TRUE)
+}
+visualize_bigrams <- function(bigrams) {
+  set.seed(5)
+  a <- grid::arrow(type = "closed", length = unit(0.1, "inches"))
+  bigrams %>%
+    graph_from_data_frame() %>%
+    ggraph(layout = "fr") +
+    geom_edge_link(aes(size = 10, color = "blue"), show.legend = FALSE, arrow = a) +
+    geom_node_point(color = "lightblue", size = 16) +
+    geom_node_text(aes(label = name, size = 20), repel = TRUE) +
+    theme_void() +
+    theme(legend.position="none")
+}
+trump_tweets_df  %>% count_bigrams()  %>% head(50) %>% visualize_bigrams()
+
+```
+
+## Word Frequencies
+
+Now we'll count word frequencies and create a word cloud.
 
 ```{r, warning = FALSE, message=FALSE}
 
@@ -63,17 +101,75 @@ tweet_words <- tweets %>%
          str_detect(word, "[a-z]"))
 
 tweet_words <- tweet_words %>% group_by(word) %>% tally() %>% mutate(freq = n) %>% select(word, freq) %>% arrange(desc(freq))
-
 tweet_words %>% head(20) %>% kable(row.names=TRUE)
 ```
-
 
 ```{r, warning = FALSE, fig.width=8}
 wordcloud2(tweet_words, size = 0.6)
 ```
 
-## For Obama
+<br>
 
+## Sentiment
+
+Now we'll analyze sentiment.
+
+```{r, warning = FALSE, message=FALSE}
+
+trump_sentiment <- tweet_words %>%
+  inner_join(get_sentiments("bing"))
+
+trump_sentiment %>%
+  group_by(sentiment) %>%
+  top_n(10, freq) %>%
+  arrange(freq) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, freq)) %>%
+  ggplot(aes(word, freq, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Contribution to sentiment",
+       x = NULL) +
+  coord_flip()
+
+```
+
+# For Obama
+
+## Bigrams
+
+Now we'll look at bigrams contained in Obama's twitter messages.
+
+```{r, fig.width=12, fig.height = 12, warning = FALSE}
+
+count_bigrams <- function(dataset) {
+  dataset %>%
+    filter(!str_detect(text, '^"')) %>%
+    mutate(text = str_replace_all(text, "https://t.co/[A-Za-z\\d]+|&amp;", "")) %>%
+    unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+    separate(bigram, c("word1", "word2"), sep = " ") %>%
+    filter(!word1 %in% stop_words$word, !word2 %in% stop_words$word) %>%
+    count(word1, word2, sort = TRUE)
+}
+visualize_bigrams <- function(bigrams) {
+  set.seed(5)
+  a <- grid::arrow(type = "closed", length = unit(0.1, "inches"))
+  bigrams %>%
+    graph_from_data_frame() %>%
+    ggraph(layout = "fr") +
+    geom_edge_link(aes(size = 10, color = "blue"), show.legend = FALSE, arrow = a) +
+    geom_node_point(color = "lightblue", size = 16) +
+    geom_node_text(aes(label = name, size = 20), repel = TRUE) +
+    theme_void() +
+    theme(legend.position="none")
+}
+obama_tweets_df  %>% count_bigrams()  %>% head(50) %>% visualize_bigrams()
+
+```
+
+## Word Frequencies
+
+Now we'll count word frequencies and create a word cloud.
 
 ```{r, warning = FALSE, message=FALSE}
 
@@ -96,4 +192,29 @@ tweet_words %>% head(20) %>% kable(row.names=TRUE)
 wordcloud2(tweet_words, size = 0.6)
 ```
 
+<br>
+
+## Sentiment
+
+Now we'll analyze sentiment.
+
+```{r, warning = FALSE, message=FALSE}
+
+obama_sentiment <- tweet_words %>%
+  inner_join(get_sentiments("bing"))
+
+obama_sentiment %>%
+  group_by(sentiment) %>%
+  top_n(10, freq) %>%
+  arrange(freq) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, freq)) %>%
+  ggplot(aes(word, freq, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Contribution to sentiment",
+       x = NULL) +
+  coord_flip()
+
+```
 
