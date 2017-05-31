@@ -203,8 +203,8 @@ $(document).ready(function () {
 </div>
 
 
-<p>This project is an example of Bayesian linear regression.</p>
-<p>First we generate a set of sample points from a noisy sine curve. These will be used to train the model.</p>
+<p>This project is an example of Bayesian linear regression. To experiment more with this, please see my app, <a href="https://othis001.shinyapps.io/blr_example/">Bayesian Linear Regression Example</a>.</p>
+<p>First we generate a set of sample points a sine curve and apply some noise to them. These will be used to train the model.</p>
 <pre class="r"><code># Generates a noisy sine curve.
 
 N &lt;- 10
@@ -212,11 +212,14 @@ sig2 &lt;- 0.2
 
 x &lt;- as.matrix( runif(N, 0, 1) )
 
-t &lt;- sin(2*pi*x)  + sig2 * runif(N, -1, 1) 
+f &lt;- function(x) { sin(2*pi*x) }
+
+t &lt;- f(x)  + sig2 * runif(N, -1, 1) 
 
 sample_points &lt;- data.frame(x = x, t = t)
 
-sample_points %&gt;% ggplot(aes(x = x, y = t)) + geom_point() + labs(x = &quot;x&quot;, y = &quot;y&quot;)</code></pre>
+sample_points %&gt;% ggplot(aes(x = x, y = t)) + geom_point() + labs(x = &quot;x&quot;, y = &quot;y&quot;) +
+      stat_function(fun = f, color = &quot;green&quot;)</code></pre>
 <p><img src="BLR_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
 <p>Now we will use these points to construct our model.</p>
 <pre class="r"><code># First we define the basis functions
@@ -271,14 +274,13 @@ for (k in 1:length(xs) ) {
   sigN[k] &lt;- binv + t(p) %*% SN %*% p
 }</code></pre>
 <p>Finally we will plot our results. Note the gray error bars.</p>
-<pre class="r"><code>sample_points &lt;- data.frame(x = x, t = t)
-
-mod &lt;- data.frame(xs = xs, tm = t( tm ), stdev = sqrt( t( sigN ) ) )
+<pre class="r"><code>mod &lt;- data.frame(xs = xs, tm = t( tm ), stdev = sqrt( t( sigN ) ) )
 
 mod %&gt;% ggplot(aes(x = xs, y = tm)) + geom_line(color = &quot;red&quot;) + 
   geom_segment(aes(x = xs, xend = xs, y = tm + stdev, yend = tm - stdev), color = &quot;gray&quot;) + 
   geom_point(data = sample_points, aes(x = x, y = t)) +
-  labs(x = &quot;x&quot;, y = &quot;y&quot;)</code></pre>
+  labs(x = &quot;x&quot;, y = &quot;y&quot;) +
+  stat_function(fun = f, color = &quot;green&quot;)</code></pre>
 <p><img src="BLR_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 
 

@@ -8,7 +8,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-This project is an example of Bayesian linear regression.
+This project is an example of Bayesian linear regression. To experiment more with this, please see my app, [Bayesian Linear Regression Example](https://othis001.shinyapps.io/blr_example/).
 
 ```{r, message= FALSE, warning = FALSE, include = FALSE}
 library(ggplot2)
@@ -16,7 +16,7 @@ library(dplyr)
 set.seed(5)
 ```
 
-First we generate a set of sample points from a noisy sine curve. These will be used to train the model.
+First we generate a set of sample points a sine curve and apply some noise to them. These will be used to train the model.
 
 ```{r}
 
@@ -27,11 +27,14 @@ sig2 <- 0.2
 
 x <- as.matrix( runif(N, 0, 1) )
 
-t <- sin(2*pi*x)  + sig2 * runif(N, -1, 1) 
+f <- function(x) { sin(2*pi*x) }
+
+t <- f(x)  + sig2 * runif(N, -1, 1) 
 
 sample_points <- data.frame(x = x, t = t)
 
-sample_points %>% ggplot(aes(x = x, y = t)) + geom_point() + labs(x = "x", y = "y")
+sample_points %>% ggplot(aes(x = x, y = t)) + geom_point() + labs(x = "x", y = "y") +
+      stat_function(fun = f, color = "green")
 
 ```
 
@@ -98,13 +101,12 @@ Finally we will plot our results. Note the gray error bars.
 
 ```{r}
 
-sample_points <- data.frame(x = x, t = t)
-
 mod <- data.frame(xs = xs, tm = t( tm ), stdev = sqrt( t( sigN ) ) )
 
 mod %>% ggplot(aes(x = xs, y = tm)) + geom_line(color = "red") + 
   geom_segment(aes(x = xs, xend = xs, y = tm + stdev, yend = tm - stdev), color = "gray") + 
   geom_point(data = sample_points, aes(x = x, y = t)) +
-  labs(x = "x", y = "y")
+  labs(x = "x", y = "y") +
+  stat_function(fun = f, color = "green")
 
 ```
