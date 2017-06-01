@@ -8,5 +8,6 @@ This is a collection of some projects related to machine learning.
 
 * [Unsupervised Genetics](genetics.html) An example of clustering on genetics data.
 * [Housing Prices](houses.html) A project to study housing prices.
+* [Topological Data Analysis of Stars](starsTDA.html) Using TDA to study star data.
 * [Bayesian Linear Regression](BLR.html) An example of Bayesian Linear Regression.
  
