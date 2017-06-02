@@ -4,7 +4,9 @@ author: "Oliver Thistlethwaite"
 output: html_document
 ---
 
-This website is a collection of Data Science projects. I graciously acknowledge [Dr. Daniel Kaplan](https://www.macalester.edu/~kaplan/) for teaching me during the [2017 IMA Data Science Fellowship](https://www.ima.umn.edu/2016-2017/SW1.23-3.10.17#).
+This website is a collection of Data Science projects.
 
 * [Wrangling and Plotting](wrangling.html) Projects related to data wrangling and plotting.
 * [Machine Learning](learning.html) Projects related to machine learning.
+
+I graciously acknowledge [Dr. Daniel Kaplan](https://www.macalester.edu/~kaplan/) for teaching me during the [2017 IMA Data Science Fellowship](https://www.ima.umn.edu/2016-2017/SW1.23-3.10.17#).
