@@ -93,6 +93,6 @@ pred <- predict(mod, testset)
 confusionMatrix(pred, testset$type)
 ```
 
-There were still 2 restaurants we couldn't get correct!
+There was still 1 restaurant we couldn't get correct!
 
 
