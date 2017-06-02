@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Oliver Thistlethwaite" />
+
+
+<title>Hardee’s and Carl’s Jr locations</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-1.1/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-1.1/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Data Science</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="wrangling.html">Wrangling and Plotting</a>
+</li>
+<li>
+  <a href="learning.html">Machine Learning</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Hardee’s and Carl’s Jr locations</h1>
+<h4 class="author"><em>Oliver Thistlethwaite</em></h4>
+
+</div>
+
+
+<p>In this project, we will analyze the locations Hardee’s and Carl’s Jr. First we’ll load the required libraries.</p>
+<pre class="r"><code>library(readr)
+library(knitr)
+library(ggmap)
+library(caret)
+library(kernlab)
+library(dplyr)</code></pre>
+<p>Now we’ll read in the location data for Hardee’s and Carl’s Jr. These were obtained for free from the <a href="http://www.poi-factory.com">Poi-Factory</a> website.</p>
+<pre class="r"><code>Restaurants &lt;- read_csv(&quot;Hardee&#39;s USA.csv&quot;, col_names = FALSE) %&gt;% mutate(type = as.factor(&quot;Hardees&quot;)) %&gt;%
+               rbind( read_csv(&quot;Carl&#39;s Jr_USA_CAN.csv&quot;, col_names = FALSE) %&gt;% mutate(type = as.factor(&quot;Carls&quot;)) )
+
+names(Restaurants) &lt;- c(&quot;long&quot;, &quot;lat&quot;, &quot;name&quot;, &quot;address&quot;, &quot;type&quot;)</code></pre>
+<p>Next we’ll plot the data on a map.</p>
+<pre class="r"><code>map&lt;-get_map(location=&#39;united states&#39;, zoom=4)
+
+ggmap(map) + geom_point(aes(x = long, y = lat, color = type), data = Restaurants, size = 1, alpha = 0.5) +
+  scale_color_manual(values=c(&quot;blue&quot;, &quot;red&quot;), labels=c(&quot;Hardee&#39;s&quot;, &quot;Carl&#39;s Jr&quot;))</code></pre>
+<p><img src="carls_files/figure-html/unnamed-chunk-3-1.png" width="1152" /></p>
+<div id="classification" class="section level1">
+<h1>Classification</h1>
+<p>An interesting problem is to see if we can classify whether a restaurant will be Hardee’s or Carl’s Jr based on its location. We’ll use the <em>Caret</em> library to do this. First we’ll create a training set with 2/3 of the data and use the rest for testing.</p>
+<pre class="r"><code>set.seed(3)
+
+index &lt;- 1:nrow(Restaurants)
+testindex &lt;- sample(index, trunc(length(index)/3))
+testset &lt;- na.omit(Restaurants[testindex,])
+trainset &lt;- na.omit(Restaurants[-testindex,])</code></pre>
+<p><br></p>
+<div id="k-nearest-neighbors" class="section level2">
+<h2>K-Nearest Neighbors</h2>
+<p>First we’ll try k-nearest neighbors. We’ll use 10-fold cross validation to find k.</p>
+<pre class="r"><code>fitControl &lt;- trainControl(method = &#39;cv&#39;, number = 10, summaryFunction=defaultSummary)
+grid &lt;- expand.grid(k = 1:100)
+
+
+mod &lt;- train(type ~ long + lat, data = trainset, method = &quot;knn&quot;,
+             tuneGrid = grid, trControl=fitControl)
+
+pred &lt;- predict(mod, testset)
+confusionMatrix(pred, testset$type)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction Hardees Carls
+##    Hardees     598     4
+##    Carls         0   377
+##                                           
+##                Accuracy : 0.9959          
+##                  95% CI : (0.9896, 0.9989)
+##     No Information Rate : 0.6108          
+##     P-Value [Acc &gt; NIR] : &lt;2e-16          
+##                                           
+##                   Kappa : 0.9914          
+##  Mcnemar&#39;s Test P-Value : 0.1336          
+##                                           
+##             Sensitivity : 1.0000          
+##             Specificity : 0.9895          
+##          Pos Pred Value : 0.9934          
+##          Neg Pred Value : 1.0000          
+##              Prevalence : 0.6108          
+##          Detection Rate : 0.6108          
+##    Detection Prevalence : 0.6149          
+##       Balanced Accuracy : 0.9948          
+##                                           
+##        &#39;Positive&#39; Class : Hardees         
+## </code></pre>
+<p>So this model did quite well.</p>
+<p><br></p>
+</div>
+<div id="support-vector-machine" class="section level2">
+<h2>Support Vector Machine</h2>
+<p>The obvious model to try is a support vector machine.</p>
+<pre class="r"><code>mod &lt;- train(type ~ long + lat, data = trainset, method = &quot;svmRadial&quot;)
+
+pred &lt;- predict(mod, testset)
+confusionMatrix(pred, testset$type)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction Hardees Carls
+##    Hardees     598     1
+##    Carls         0   380
+##                                      
+##                Accuracy : 0.999      
+##                  95% CI : (0.9943, 1)
+##     No Information Rate : 0.6108     
+##     P-Value [Acc &gt; NIR] : &lt;2e-16     
+##                                      
+##                   Kappa : 0.9979     
+##  Mcnemar&#39;s Test P-Value : 1          
+##                                      
+##             Sensitivity : 1.0000     
+##             Specificity : 0.9974     
+##          Pos Pred Value : 0.9983     
+##          Neg Pred Value : 1.0000     
+##              Prevalence : 0.6108     
+##          Detection Rate : 0.6108     
+##    Detection Prevalence : 0.6118     
+##       Balanced Accuracy : 0.9987     
+##                                      
+##        &#39;Positive&#39; Class : Hardees    
+## </code></pre>
+<p>There were still 2 restaurants we couldn’t get correct!</p>
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

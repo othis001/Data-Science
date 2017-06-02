@@ -1,0 +1,98 @@
+---
+title: "Hardee's and Carl's Jr locations"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+In this project, we will analyze the locations Hardee's and Carl's Jr. First we'll load the required libraries.
+
+```{r, warning = FALSE, message=FALSE}
+
+library(readr)
+library(knitr)
+library(ggmap)
+library(caret)
+library(kernlab)
+library(dplyr)
+
+```
+
+Now we'll read in the location data for Hardee's and Carl's Jr. These were obtained for free from the [Poi-Factory](http://www.poi-factory.com) website. 
+
+```{r, warning = FALSE, message=FALSE, cache = TRUE}
+
+Restaurants <- read_csv("Hardee's USA.csv", col_names = FALSE) %>% mutate(type = as.factor("Hardees")) %>%
+               rbind( read_csv("Carl's Jr_USA_CAN.csv", col_names = FALSE) %>% mutate(type = as.factor("Carls")) )
+
+names(Restaurants) <- c("long", "lat", "name", "address", "type")
+
+```
+
+Next we'll plot the data on a map.
+
+```{r, fig.width=12, fig.height = 12, message = FALSE, warning = FALSE}
+map<-get_map(location='united states', zoom=4)
+
+ggmap(map) + geom_point(aes(x = long, y = lat, color = type), data = Restaurants, size = 1, alpha = 0.5) +
+  scale_color_manual(values=c("blue", "red"), labels=c("Hardee's", "Carl's Jr"))
+
+```
+
+# Classification
+
+An interesting problem is to see if we can classify whether a restaurant will be Hardee's or Carl's Jr based on its location. We'll use the *Caret* library to do this. First we'll create a training set with 2/3 of the data and use the rest for testing.
+
+```{r, warning = FALSE, message = FALSE}
+
+set.seed(3)
+
+index <- 1:nrow(Restaurants)
+testindex <- sample(index, trunc(length(index)/3))
+testset <- na.omit(Restaurants[testindex,])
+trainset <- na.omit(Restaurants[-testindex,])
+
+```
+
+<br>
+
+## K-Nearest Neighbors
+
+First we'll try k-nearest neighbors. We'll use 10-fold cross validation to find k.
+
+```{r}
+
+fitControl <- trainControl(method = 'cv', number = 10, summaryFunction=defaultSummary)
+grid <- expand.grid(k = 1:100)
+
+
+mod <- train(type ~ long + lat, data = trainset, method = "knn",
+             tuneGrid = grid, trControl=fitControl)
+
+pred <- predict(mod, testset)
+confusionMatrix(pred, testset$type)
+```
+
+So this model did quite well.
+
+<br>
+
+## Support Vector Machine
+
+The obvious model to try is a support vector machine.
+
+```{r, warning = FALSE, message = FALSE}
+
+mod <- train(type ~ long + lat, data = trainset, method = "svmRadial")
+
+pred <- predict(mod, testset)
+confusionMatrix(pred, testset$type)
+```
+
+There were still 2 restaurants we couldn't get correct!
+
+
