@@ -23,7 +23,7 @@ library(dplyr)
 
 ```
 
-First we'll read in recent temperature data for Knoxville, TN. This was obtained for free from the [National Centers for Environmental Information](https://www.ncei.noaa.gov/) website. We'll use data is from 1/1/2010 to 5/30/2017. For simplicity we'll just focus on daily maximum temperature from one weather station. We'll also use *lubridate* to turn the DATE column into a genuine date column.
+First we'll read in recent temperature data for Knoxville, TN. This was obtained for free from the [National Centers for Environmental Information website](https://www.ncei.noaa.gov/). We'll use data from 1/1/2010 to 5/30/2017. For simplicity we'll just focus on daily maximum temperatures from one weather station. We'll also use *lubridate* to turn the DATE column into a genuine date column.
 
 ```{r, warning = FALSE, message=FALSE, cache = TRUE}
 

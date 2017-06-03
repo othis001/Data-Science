@@ -1,5 +1,5 @@
 ---
-title: "Hardee's and Carl's Jr locations"
+title: "Hardee's and Carl's Jr Locations"
 author: "Oliver Thistlethwaite"
 output: html_document
 ---

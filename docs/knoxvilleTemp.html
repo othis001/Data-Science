@@ -204,7 +204,7 @@ $(document).ready(function () {
 
 
 <p>In this project, we will attempt to predict the temperature in Knoxville, TN using the <em>ts</em> and <em>forecast</em> libraries.</p>
-<p>First we’ll read in recent temperature data for Knoxville, TN. This was obtained for free from the <a href="https://www.ncei.noaa.gov/">National Centers for Environmental Information</a> website. We’ll use data is from 1/1/2010 to 5/30/2017. For simplicity we’ll just focus on daily maximum temperature from one weather station. We’ll also use <em>lubridate</em> to turn the DATE column into a genuine date column.</p>
+<p>First we’ll read in recent temperature data for Knoxville, TN. This was obtained for free from the <a href="https://www.ncei.noaa.gov/">National Centers for Environmental Information website</a>. We’ll use data from 1/1/2010 to 5/30/2017. For simplicity we’ll just focus on daily maximum temperatures from one weather station. We’ll also use <em>lubridate</em> to turn the DATE column into a genuine date column.</p>
 <pre class="r"><code>Temperatures &lt;- read_csv(&quot;983224.csv&quot;) %&gt;%
   filter(STATION_NAME == &quot;KNOXVILLE MCGHEE TYSON AIRPORT TN US&quot;) %&gt;%
   select(DATE, TMAX) %&gt;% mutate(DATE = ymd(DATE)) %&gt;%
