@@ -12,7 +12,7 @@
 <meta name="author" content="Oliver Thistlethwaite" />
 
 
-<title>Machine Learning</title>
+<title>Knoxville Temperature Prediction</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -197,21 +197,92 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">Machine Learning</h1>
+<h1 class="title toc-ignore">Knoxville Temperature Prediction</h1>
 <h4 class="author"><em>Oliver Thistlethwaite</em></h4>
 
 </div>
 
 
-<p>This is a collection of some projects related to machine learning.</p>
-<ul>
-<li><a href="genetics.html">Unsupervised Genetics</a> An example of clustering on genetics data.</li>
-<li><a href="houses.html">Housing Prices</a> A project to study housing prices.</li>
-<li><a href="knoxvilleTemp.html">Knoxville Temperature Prediction</a> Using forecasting to predict the temperature in Knoxville, TN.</li>
-<li><a href="starsTDA.html">Topological Data Analysis of Stars</a> Using TDA to study star data.</li>
-<li><a href="carls.html">Hardee’s and Carl’s Jr locations</a> Trying to predict whether a restaurant will be Hardee’s or Carl’s Jr.</li>
-<li><a href="BLR.html">Bayesian Linear Regression</a> An example of Bayesian Linear Regression.</li>
-</ul>
+<p>In this project, we will attempt to predict the temperature in Knoxville, TN using the <em>ts</em> and <em>forecast</em> libraries.</p>
+<p>First we’ll read in recent temperature data for Knoxville, TN. This was obtained for free from the <a href="https://www.ncei.noaa.gov/">National Centers for Environmental Information</a> website. We’ll use data is from 1/1/2010 to 5/30/2017. For simplicity we’ll just focus on daily maximum temperature from one weather station. We’ll also use <em>lubridate</em> to turn the DATE column into a genuine date column.</p>
+<pre class="r"><code>Temperatures &lt;- read_csv(&quot;983224.csv&quot;) %&gt;%
+  filter(STATION_NAME == &quot;KNOXVILLE MCGHEE TYSON AIRPORT TN US&quot;) %&gt;%
+  select(DATE, TMAX) %&gt;% mutate(DATE = ymd(DATE)) %&gt;%
+  filter(DATE &gt; &quot;2010-1-1&quot;, DATE &lt; &quot;2017-5-31&quot;)</code></pre>
+<p>Next we’ll plot the last decade of temperature data. The yearly cycle is clearly visible.</p>
+<pre class="r"><code>Temperatures %&gt;% ggplot(aes(x=DATE, y=TMAX)) + geom_line() + labs(y = &quot;daily high temperature&quot;)</code></pre>
+<p><img src="knoxvilleTemp_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><br></p>
+<div id="tbats" class="section level1">
+<h1>TBATS</h1>
+<p>Now we’ll use TBATS to construct our model. This will account for annual seasonality as well as weekly seasonality.</p>
+<pre class="r"><code>TempTS &lt;- msts(Temperatures %&gt;% select(-DATE), seasonal.periods=c(7,365.25), start = 2010)
+fit &lt;- tbats(TempTS)
+fc &lt;- forecast(fit)
+plot(fc)</code></pre>
+<p><img src="knoxvilleTemp_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p>This definitely captured the annual seasonality.</p>
+<p>Now we’ll print the predictions for the next couple days.</p>
+<pre class="r"><code>Predictions &lt;- as.data.frame(fc$mean)
+names(Predictions) &lt;- &quot;TMAX&quot;
+
+Predictions &lt;- Predictions %&gt;%
+  mutate(DATE = ymd(20170530) + days(row_number())) %&gt;%
+  select(DATE, TMAX)
+
+Predictions %&gt;% head(10) %&gt;% kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">DATE</th>
+<th align="right">TMAX</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">2017-05-31</td>
+<td align="right">84.26738</td>
+</tr>
+<tr class="even">
+<td align="left">2017-06-01</td>
+<td align="right">84.76376</td>
+</tr>
+<tr class="odd">
+<td align="left">2017-06-02</td>
+<td align="right">84.95885</td>
+</tr>
+<tr class="even">
+<td align="left">2017-06-03</td>
+<td align="right">85.63916</td>
+</tr>
+<tr class="odd">
+<td align="left">2017-06-04</td>
+<td align="right">86.60600</td>
+</tr>
+<tr class="even">
+<td align="left">2017-06-05</td>
+<td align="right">87.03556</td>
+</tr>
+<tr class="odd">
+<td align="left">2017-06-06</td>
+<td align="right">87.08748</td>
+</tr>
+<tr class="even">
+<td align="left">2017-06-07</td>
+<td align="right">87.18037</td>
+</tr>
+<tr class="odd">
+<td align="left">2017-06-08</td>
+<td align="right">87.03067</td>
+</tr>
+<tr class="even">
+<td align="left">2017-06-09</td>
+<td align="right">86.79794</td>
+</tr>
+</tbody>
+</table>
+<p>The highs were 81 on 5/31, 81 on 6/1, and 84 on 6/2. So at least these results are semi-reasonable.</p>
+</div>
 
 
 

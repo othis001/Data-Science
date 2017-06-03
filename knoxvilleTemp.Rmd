@@ -1,0 +1,77 @@
+---
+title: "Knoxville Temperature Prediction"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+In this project, we will attempt to predict the temperature in Knoxville, TN using the *ts* and *forecast* libraries.
+
+```{r, warning = FALSE, message=FALSE, include = FALSE}
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(lubridate)
+library(tseries)
+library(forecast)
+library(dplyr)
+
+```
+
+First we'll read in recent temperature data for Knoxville, TN. This was obtained for free from the [National Centers for Environmental Information](https://www.ncei.noaa.gov/) website. We'll use data is from 1/1/2010 to 5/30/2017. For simplicity we'll just focus on daily maximum temperature from one weather station. We'll also use *lubridate* to turn the DATE column into a genuine date column.
+
+```{r, warning = FALSE, message=FALSE, cache = TRUE}
+
+Temperatures <- read_csv("983224.csv") %>%
+  filter(STATION_NAME == "KNOXVILLE MCGHEE TYSON AIRPORT TN US") %>%
+  select(DATE, TMAX) %>% mutate(DATE = ymd(DATE)) %>%
+  filter(DATE > "2010-1-1", DATE < "2017-5-31")
+
+```
+
+Next we'll plot the last decade of temperature data. The yearly cycle is clearly visible.
+
+```{r}
+
+Temperatures %>% ggplot(aes(x=DATE, y=TMAX)) + geom_line() + labs(y = "daily high temperature")
+
+```
+
+
+<br>
+
+# TBATS
+
+Now we'll use TBATS to construct our model. This will account for annual seasonality as well as weekly seasonality.
+
+```{r}
+
+TempTS <- msts(Temperatures %>% select(-DATE), seasonal.periods=c(7,365.25), start = 2010)
+fit <- tbats(TempTS)
+fc <- forecast(fit)
+plot(fc)
+
+```
+
+This definitely captured the annual seasonality.
+
+Now we'll print the predictions for the next couple days.
+
+```{r}
+
+Predictions <- as.data.frame(fc$mean)
+names(Predictions) <- "TMAX"
+
+Predictions <- Predictions %>%
+  mutate(DATE = ymd(20170530) + days(row_number())) %>%
+  select(DATE, TMAX)
+
+Predictions %>% head(10) %>% kable()
+```
+
+The highs were 81 on 5/31, 81 on 6/1, and 84 on 6/2. So at least these results are semi-reasonable.  

@@ -1,0 +1,8 @@
+base
+readr
+knitr
+lubridate
+dplyr
+ggplot2
+tseries
+forecast
