@@ -208,7 +208,7 @@ $(document).ready(function () {
 <pre class="r"><code>Temperatures &lt;- read_csv(&quot;983224.csv&quot;) %&gt;%
   filter(STATION_NAME == &quot;KNOXVILLE MCGHEE TYSON AIRPORT TN US&quot;) %&gt;%
   select(DATE, TMAX) %&gt;% mutate(DATE = ymd(DATE)) %&gt;%
-  filter(DATE &gt; &quot;2010-1-1&quot;, DATE &lt; &quot;2017-5-31&quot;)</code></pre>
+  filter(DATE &gt;= &quot;2010-1-1&quot;, DATE &lt; &quot;2017-5-31&quot;)</code></pre>
 <p>Next we’ll plot the last decade of temperature data. The yearly cycle is clearly visible.</p>
 <pre class="r"><code>Temperatures %&gt;% ggplot(aes(x=DATE, y=TMAX)) + geom_line() + labs(y = &quot;daily high temperature&quot;)</code></pre>
 <p><img src="knoxvilleTemp_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
@@ -241,43 +241,43 @@ Predictions %&gt;% head(10) %&gt;% kable()</code></pre>
 <tbody>
 <tr class="odd">
 <td align="left">2017-05-31</td>
-<td align="right">84.26738</td>
+<td align="right">83.84814</td>
 </tr>
 <tr class="even">
 <td align="left">2017-06-01</td>
-<td align="right">84.76376</td>
+<td align="right">84.14353</td>
 </tr>
 <tr class="odd">
 <td align="left">2017-06-02</td>
-<td align="right">84.95885</td>
+<td align="right">84.56931</td>
 </tr>
 <tr class="even">
 <td align="left">2017-06-03</td>
-<td align="right">85.63916</td>
+<td align="right">85.26205</td>
 </tr>
 <tr class="odd">
 <td align="left">2017-06-04</td>
-<td align="right">86.60600</td>
+<td align="right">86.08152</td>
 </tr>
 <tr class="even">
 <td align="left">2017-06-05</td>
-<td align="right">87.03556</td>
+<td align="right">86.69087</td>
 </tr>
 <tr class="odd">
 <td align="left">2017-06-06</td>
-<td align="right">87.08748</td>
+<td align="right">86.85399</td>
 </tr>
 <tr class="even">
 <td align="left">2017-06-07</td>
-<td align="right">87.18037</td>
+<td align="right">86.63751</td>
 </tr>
 <tr class="odd">
 <td align="left">2017-06-08</td>
-<td align="right">87.03067</td>
+<td align="right">86.37396</td>
 </tr>
 <tr class="even">
 <td align="left">2017-06-09</td>
-<td align="right">86.79794</td>
+<td align="right">86.41873</td>
 </tr>
 </tbody>
 </table>

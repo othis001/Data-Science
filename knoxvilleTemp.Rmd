@@ -30,7 +30,7 @@ First we'll read in recent temperature data for Knoxville, TN. This was obtained
 Temperatures <- read_csv("983224.csv") %>%
   filter(STATION_NAME == "KNOXVILLE MCGHEE TYSON AIRPORT TN US") %>%
   select(DATE, TMAX) %>% mutate(DATE = ymd(DATE)) %>%
-  filter(DATE > "2010-1-1", DATE < "2017-5-31")
+  filter(DATE >= "2010-1-1", DATE < "2017-5-31")
 
 ```
 
