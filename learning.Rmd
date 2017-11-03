@@ -6,6 +6,7 @@ output: html_document
 
 This is a collection of some projects related to machine learning.
 
+* [Hierarchical Bayesian Modeling of House Prices](housing.html) A crossed hierarchical model of house price distributions.
 * [Unsupervised Genetics](genetics.html) An example of clustering on genetics data.
 * [Housing Prices](houses.html) A project to study housing prices.
 * [Knoxville Temperature Prediction](knoxvilleTemp.html) Using forecasting to predict the temperature in Knoxville, TN.

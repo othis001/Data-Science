@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Oliver Thistlethwaite" />
+
+
+<title>Hierarchical Housing Price Model Example</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-1.1/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-1.1/highlight.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Data Science</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="wrangling.html">Wrangling and Plotting</a>
+</li>
+<li>
+  <a href="learning.html">Machine Learning</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Hierarchical Housing Price Model Example</h1>
+<h4 class="author"><em>Oliver Thistlethwaite</em></h4>
+
+</div>
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>For this example, use hierarchical modelling to study housing prices. For our data, we’ll use the <em>Ames Housing Data</em> dataset. This contains data on housing prices in Ames, Iowa. It and its documentation can be found at the following urls:</p>
+<ul>
+<li><p><a href="http://www.amstat.org/publications/jse/v19n3/decock/AmesHousing.xls" class="uri">http://www.amstat.org/publications/jse/v19n3/decock/AmesHousing.xls</a></p></li>
+<li><p><a href="http://www.amstat.org/publications/jse/v19n3/decock/DataDocumentation.txt" class="uri">http://www.amstat.org/publications/jse/v19n3/decock/DataDocumentation.txt</a></p></li>
+</ul>
+<p>First we’ll load the required libraries for this project. We’ll be using the R implementation of STAN for our modelling.</p>
+<pre class="r"><code>library(caret)
+library(rstan)
+library(dplyr)
+library(ggplot2)
+library(tidyr)</code></pre>
+<p>Now we’ll load our data. For this project we’ll study how the distributions of house prices vary by neighborhood. Note there is information for 28 neighborhoods and 2930 houses. We’ll also create a list of full names of the neighborhoods which can be found in the documentation.</p>
+<pre class="r"><code>Houses &lt;- read.csv(&quot;AmesHousing.csv&quot;) %&gt;% mutate(SalePrice = SalePrice / 1000)
+
+Neighborhood_array &lt;- c(&quot;Bloomington Heights&quot;, &quot;Bluestem&quot;, &quot;Briardale&quot;, &quot;Brookside&quot;, &quot;Clear Creek&quot;, &quot;College Creek&quot;, &quot;Crawford&quot;, &quot;Edwards&quot;, &quot;Gilbert&quot;, &quot;Greens&quot;, &quot;Green Hills&quot;, &quot;Iowa DOT and Rail Road&quot;, &quot;Landmark&quot;, &quot;Meadow Village&quot;, &quot;Mitchell&quot;, &quot;North Ames&quot;, &quot;Northridge&quot;, &quot;Northpark Villa&quot;, &quot;Northridge Heights&quot;, &quot;Northwest Ames&quot;, &quot;Old Town&quot;, &quot;South &amp; West of Iowa State University&quot;, &quot;Sawyer&quot;, &quot;Sawyer West&quot;, &quot;Somerset&quot;, &quot;Stone Brook&quot;, &quot;Timberland&quot;, &quot;Veenker&quot;)</code></pre>
+<p>First lets just examine the distribution of prices for the first several neighborhoods.</p>
+<pre class="r"><code>levels(Houses$Neighborhood) &lt;- Neighborhood_array
+
+Houses %&gt;% filter(Neighborhood %in% c(&quot;Bloomington Heights&quot;, &quot;Bluestem&quot;, &quot;Briardale&quot;, &quot;Brookside&quot;, &quot;Clear Creek&quot;, &quot;College Creek&quot;)) %&gt;%
+  ggplot(aes(x=SalePrice)) + geom_density(fill = &quot;red&quot;) + facet_wrap(~Neighborhood, ncol = 3) + xlab(&quot;Sale Price (in thousands of dollars)&quot;)</code></pre>
+<p><img src="housing_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+</div>
+<div id="crossed-hierarchical-model" class="section level1">
+<h1>Crossed Hierarchical Model</h1>
+<p>Now we’ll implement a crossed hierarchical model.</p>
+<p>We’ll be adding a predictor so to see which ones are important, we’ll use a conditional inference tree from the caret library to examine variable importance in predicting price. Note first we remove the columns with many missing values and then rows with missing values that remain.</p>
+<pre class="r"><code>library(caret)
+
+Houses &lt;- Houses %&gt;% select(-Order, -PID, -Alley, -Fireplace.Qu, -Garage.Finish, -Garage.Qual, -Garage.Cond, -Pool.QC, -Fence, -Misc.Feature, -Lot.Frontage, -Garage.Type, -Garage.Yr.Blt) %&gt;% na.omit()
+
+set.seed(1234)
+
+mod &lt;- train(SalePrice ~ ., data = Houses, method = &quot;ctree&quot;)
+varImp(mod)</code></pre>
+<pre><code>## loess r-squared variable importance
+## 
+##   only 20 most important variables shown (out of 68)
+## 
+##                Overall
+## Overall.Qual    100.00
+## Gr.Liv.Area      81.91
+## Total.Bsmt.SF    73.08
+## Garage.Area      70.59
+## X1st.Flr.SF      69.97
+## Exter.Qual       67.20
+## Garage.Cars      66.78
+## Kitchen.Qual     59.81
+## Bsmt.Qual        58.28
+## Full.Bath        48.54
+## Year.Built       48.44
+## BsmtFin.SF.1     46.18
+## Year.Remod.Add   43.61
+## Mas.Vnr.Area     40.39
+## TotRms.AbvGrd    40.30
+## X2nd.Flr.SF      34.89
+## Fireplaces       34.72
+## Foundation       33.84
+## Heating.QC       28.02
+## Wood.Deck.SF     16.27</code></pre>
+<p>This suggests <em>Overall.Qual</em> is the most important so we’ll use it in our model. Note this is a discrete variable that takes integers values from 1 to 10 and describes the overall quality of the house with 10 being the highest quality.</p>
+<p>Now we’ll reload our data and select the columns we’re interested in. Also we’ll transform the neighborhood names into integers.</p>
+<pre class="r"><code>Houses &lt;- read.csv(&quot;AmesHousing.csv&quot;) %&gt;% mutate(Neighborhood = as.numeric(Neighborhood), SalePrice = SalePrice / 1000) %&gt;% select(SalePrice, Neighborhood, Overall.Qual) %&gt;% na.omit()</code></pre>
+<p>Here is the STAN code for our model.</p>
+<pre class="r"><code>crossed_stan_code &lt;- 
+
+&quot;
+
+data {
+  int&lt;lower=0&gt; N; //number of observations
+  int&lt;lower=1,upper=10&gt; qual_id[N]; // vector of quality indices
+  int&lt;lower=1,upper=28&gt; nbhd_id[N]; // vector of neighborhood indices
+  vector[N] y;
+}
+parameters {
+  vector[10] gamma; // vector of quality deviation from the average 
+  vector[28] delta; // vector of neighborhood deviation from the average
+  real&lt;lower=0&gt; mu; // average house price value
+  real&lt;lower=0&gt; sigma_gamma; // standard deviation of the gamma coefficients
+  real&lt;lower=0&gt; sigma_delta; // standard deviation of the delta coefficients
+  real&lt;lower=0&gt; sigma_y; // standard deviation of the observations
+}
+transformed parameters {
+  vector[N] y_hat;
+
+  for (i in 1:N)
+    y_hat[i] = mu + gamma[qual_id[i]] + delta[nbhd_id[i]];
+}
+model {
+  //priors on the scale coefficient
+  sigma_gamma ~ cauchy(0,2.5);
+  sigma_delta ~ cauchy(0,2.5);
+  sigma_y ~ gamma(2,0.1);
+  // gets quality and neighborhood level deviation
+  gamma ~ normal(0, sigma_gamma);
+  delta ~ normal(0, sigma_delta);
+  // the likelihood
+  y ~ normal(y_hat, sigma_y);
+}
+
+&quot;</code></pre>
+<p>Now we’ll train our model. Note we are using Markov chain Monte Carlo (MCMC) to increase our sample size. The <em>chains</em> parameter specifies the number of Markov chains and the <em>iter</em> parameter specifies the number of iterations for each chain.</p>
+<pre class="r"><code>set.seed(1234)
+
+dat&lt;-list(N = nrow(Houses), qual_id = Houses$Overall.Qual, nbhd_id = Houses$Neighborhood, y = Houses$SalePrice )
+mod &lt;-stan(model_code = crossed_stan_code , data=dat, iter=1000, chains=2, control = list(max_treedepth = 12))</code></pre>
+<pre><code>## In file included from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/BH/include/boost/config.hpp:39:0,
+##                  from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/BH/include/boost/math/tools/config.hpp:13,
+##                  from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/StanHeaders/include/stan/math/rev/core/var.hpp:7,
+##                  from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/StanHeaders/include/stan/math/rev/core/gevv_vvv_vari.hpp:5,
+##                  from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/StanHeaders/include/stan/math/rev/core.hpp:12,
+##                  from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/StanHeaders/include/stan/math/rev/mat.hpp:4,
+##                  from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/StanHeaders/include/stan/math.hpp:4,
+##                  from /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/StanHeaders/include/src/stan/model/model_header.hpp:4,
+##                  from file2b2e7aebc91d.cpp:8:
+## /home/oliver/R/x86_64-pc-linux-gnu-library/3.4/BH/include/boost/config/compiler/gcc.hpp:186:0: warning: &quot;BOOST_NO_CXX11_RVALUE_REFERENCES&quot; redefined
+##  #  define BOOST_NO_CXX11_RVALUE_REFERENCES
+##  ^
+## &lt;command-line&gt;:0:0: note: this is the location of the previous definition
+## 
+## SAMPLING FOR MODEL &#39;002e89260e4f715def475d3670667c33&#39; NOW (CHAIN 1).
+## 
+## Gradient evaluation took 0.000199 seconds
+## 1000 transitions using 10 leapfrog steps per transition would take 1.99 seconds.
+## Adjust your expectations accordingly!
+## 
+## 
+## Iteration:   1 / 1000 [  0%]  (Warmup)
+## Iteration: 100 / 1000 [ 10%]  (Warmup)
+## Iteration: 200 / 1000 [ 20%]  (Warmup)
+## Iteration: 300 / 1000 [ 30%]  (Warmup)
+## Iteration: 400 / 1000 [ 40%]  (Warmup)
+## Iteration: 500 / 1000 [ 50%]  (Warmup)
+## Iteration: 501 / 1000 [ 50%]  (Sampling)
+## Iteration: 600 / 1000 [ 60%]  (Sampling)
+## Iteration: 700 / 1000 [ 70%]  (Sampling)
+## Iteration: 800 / 1000 [ 80%]  (Sampling)
+## Iteration: 900 / 1000 [ 90%]  (Sampling)
+## Iteration: 1000 / 1000 [100%]  (Sampling)
+## 
+##  Elapsed Time: 54.1721 seconds (Warm-up)
+##                13.4584 seconds (Sampling)
+##                67.6305 seconds (Total)
+## 
+## 
+## SAMPLING FOR MODEL &#39;002e89260e4f715def475d3670667c33&#39; NOW (CHAIN 2).
+## 
+## Gradient evaluation took 0.00018 seconds
+## 1000 transitions using 10 leapfrog steps per transition would take 1.8 seconds.
+## Adjust your expectations accordingly!
+## 
+## 
+## Iteration:   1 / 1000 [  0%]  (Warmup)
+## Iteration: 100 / 1000 [ 10%]  (Warmup)
+## Iteration: 200 / 1000 [ 20%]  (Warmup)
+## Iteration: 300 / 1000 [ 30%]  (Warmup)
+## Iteration: 400 / 1000 [ 40%]  (Warmup)
+## Iteration: 500 / 1000 [ 50%]  (Warmup)
+## Iteration: 501 / 1000 [ 50%]  (Sampling)
+## Iteration: 600 / 1000 [ 60%]  (Sampling)
+## Iteration: 700 / 1000 [ 70%]  (Sampling)
+## Iteration: 800 / 1000 [ 80%]  (Sampling)
+## Iteration: 900 / 1000 [ 90%]  (Sampling)
+## Iteration: 1000 / 1000 [100%]  (Sampling)
+## 
+##  Elapsed Time: 49.9281 seconds (Warm-up)
+##                19.0615 seconds (Sampling)
+##                68.9896 seconds (Total)</code></pre>
+<p>We received no errors! Now we’ll examine the trace of <em>sigma_y</em> (the standard deviation of all the observations) in our MCMC model.</p>
+<pre class="r"><code>stan_trace(mod, pars = c(&quot;sigma_y&quot;))</code></pre>
+<p><img src="housing_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>Now we’ll extract out out samples produced and put them in a dataframe.</p>
+<pre class="r"><code>crossed_samples &lt;- as.data.frame( mod@sim$samples )  %&gt;% select(gamma.1. : delta.28.)
+
+Qual_stats &lt;- crossed_samples %&gt;% select(gamma.1. : gamma.10.) %&gt;%
+  gather(key = Qual, value = SalePrice) %&gt;% 
+  arrange(Qual) %&gt;%
+  group_by(Qual) %&gt;% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %&gt;%
+  mutate(Qual = as.numeric( gsub(&quot;[^0-9]&quot;, &quot;&quot;, Qual))) %&gt;%
+  arrange(Qual)
+
+Neighborhood_stats &lt;- crossed_samples %&gt;% select(delta.1. : delta.28.) %&gt;%
+  gather(key = Neighborhood, value = SalePrice) %&gt;%
+  group_by(Neighborhood) %&gt;% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %&gt;%
+  mutate(Neighborhood = as.factor(as.numeric( gsub(&quot;[^0-9]&quot;, &quot;&quot;, Neighborhood)))) %&gt;%
+  arrange(Neighborhood)</code></pre>
+<p>Now we’ll look at the deviation from the mean home price for each quality class. Interestingly, this suggests we need a rank of 8 to be significantly above the average home price.</p>
+<pre class="r"><code>Qual_stats %&gt;%  ggplot(aes(x = Qual, y = mean)) +
+  geom_point() +
+  scale_x_continuous(breaks= 1:10) +
+  geom_segment(aes(x = Qual, y = mean+sd, xend = Qual, yend = mean-sd), color = &quot;blue&quot;) +
+  geom_hline(aes(yintercept=0), colour=&quot;red&quot;, linetype=&quot;dashed&quot;) +
+  xlab(&quot;Overall Quality Ranking&quot;) +
+  ylab(&quot;Deviation from Average Home Price (in 1000s)&quot;)</code></pre>
+<p><img src="housing_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>Now we’ll do the same thing only for the neighborhoods.</p>
+<pre class="r"><code>levels(Neighborhood_stats$Neighborhood) &lt;- Neighborhood_array
+
+Neighborhood_stats %&gt;%  ggplot(aes(x = Neighborhood, y = mean)) +
+  geom_point() +
+  geom_segment(aes(x = Neighborhood, y = mean+sd, xend = Neighborhood, yend = mean-sd), color = &quot;blue&quot;) +
+  geom_hline(aes(yintercept=0), colour=&quot;red&quot;, linetype=&quot;dashed&quot;) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(10, 10, 10, 20)) +
+  ylab(&quot;Deviation from Average Home Price (in 1000s)&quot;)</code></pre>
+<p><img src="housing_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<div id="references" class="section level2">
+<h2>References</h2>
+<ol style="list-style-type: decimal">
+<li>Cock, D. <a href="https://ww2.amstat.org/publications/jse/v19n3/decock.pdf"><em>Ames, Iowa: Alternative to the Boston Housing Data as an End of Semester Regression Project</em></a></li>
+<li>Fonnesbeck, C. <a href="http://mc-stan.org/users/documentation/case-studies/radon.html"><em>A Primer on Bayesian Multilevel Modeling using PyStan</em></a></li>
+<li>Harris, M. <a href="https://matthewdharris.com/2016/10/18/estimating-a-beta-distribution-with-stan-hmc/"><em>Estimating a beta distribution with STAN</em></a></li>
+<li>Hertzog, L. <a href="https://biologyforfun.wordpress.com/2016/11/10/hierarchical-models-with-rstan-part-1/"><em>Hierarchical models with RSTAN part 1</em></a></li>
+<li>Ozaki, T. <a href="http://tjo-en.hatenablog.com/entry/2015/08/04/190000"><em>Bayesian modeling with R and Stan (3): Simple hierarchical Bayesian model</em></a></li>
+</ol>
+</div>
+</div>
+
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,200 @@
+---
+title: "Hierarchical Housing Price Model Example"
+author: "Oliver Thistlethwaite"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+For this example, use hierarchical modelling to study housing prices. For our data, we'll use the *Ames Housing Data* dataset. This contains data on housing prices in Ames, Iowa. It and its documentation can be found at the following urls: 
+
+* [http://www.amstat.org/publications/jse/v19n3/decock/AmesHousing.xls](http://www.amstat.org/publications/jse/v19n3/decock/AmesHousing.xls)
+
+* [http://www.amstat.org/publications/jse/v19n3/decock/DataDocumentation.txt](http://www.amstat.org/publications/jse/v19n3/decock/DataDocumentation.txt)
+
+First we'll load the required libraries for this project. We'll be using the R implementation of STAN for our modelling.
+
+```{r, message = FALSE, warning = FALSE}
+
+library(caret)
+library(rstan)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+```
+
+Now we'll load our data. For this project we'll study how the distributions of house prices vary by neighborhood. Note there is information for 28 neighborhoods and 2930 houses. We'll also create a list of full names of the neighborhoods which can be found in the documentation.
+
+```{r}
+
+Houses <- read.csv("AmesHousing.csv") %>% mutate(SalePrice = SalePrice / 1000)
+
+Neighborhood_array <- c("Bloomington Heights", "Bluestem", "Briardale", "Brookside", "Clear Creek", "College Creek", "Crawford", "Edwards", "Gilbert", "Greens", "Green Hills", "Iowa DOT and Rail Road", "Landmark", "Meadow Village", "Mitchell", "North Ames", "Northridge", "Northpark Villa", "Northridge Heights", "Northwest Ames", "Old Town", "South & West of Iowa State University", "Sawyer", "Sawyer West", "Somerset", "Stone Brook", "Timberland", "Veenker")
+
+
+```
+
+First lets just examine the distribution of prices for the first several neighborhoods.
+
+```{r}
+
+levels(Houses$Neighborhood) <- Neighborhood_array
+
+Houses %>% filter(Neighborhood %in% c("Bloomington Heights", "Bluestem", "Briardale", "Brookside", "Clear Creek", "College Creek")) %>%
+  ggplot(aes(x=SalePrice)) + geom_density(fill = "red") + facet_wrap(~Neighborhood, ncol = 3) + xlab("Sale Price (in thousands of dollars)")
+
+```
+
+# Crossed Hierarchical Model
+
+Now we'll implement a crossed hierarchical model.
+
+We'll be adding a predictor so to see which ones are important, we'll use a conditional inference tree from the caret library to examine variable importance in predicting price. Note first we remove the columns with many missing values and then rows with missing values that remain.
+
+```{r, message = FALSE, warning = FALSE}
+library(caret)
+
+Houses <- Houses %>% select(-Order, -PID, -Alley, -Fireplace.Qu, -Garage.Finish, -Garage.Qual, -Garage.Cond, -Pool.QC, -Fence, -Misc.Feature, -Lot.Frontage, -Garage.Type, -Garage.Yr.Blt) %>% na.omit()
+
+set.seed(1234)
+
+mod <- train(SalePrice ~ ., data = Houses, method = "ctree")
+varImp(mod)
+
+```
+
+This suggests *Overall.Qual* is the most important so we'll use it in our model. Note this is a discrete variable that takes integers values from 1 to 10 and describes the overall quality of the house with 10 being the highest quality.
+
+Now we'll reload our data and select the columns we're interested in. Also we'll transform the neighborhood names into integers. 
+
+```{r}
+
+Houses <- read.csv("AmesHousing.csv") %>% mutate(Neighborhood = as.numeric(Neighborhood), SalePrice = SalePrice / 1000) %>% select(SalePrice, Neighborhood, Overall.Qual) %>% na.omit()
+
+```
+
+Here is the STAN code for our model.
+
+```{r}
+
+crossed_stan_code <- 
+
+"
+
+data {
+  int<lower=0> N; //number of observations
+  int<lower=1,upper=10> qual_id[N]; // vector of quality indices
+  int<lower=1,upper=28> nbhd_id[N]; // vector of neighborhood indices
+  vector[N] y;
+}
+parameters {
+  vector[10] gamma; // vector of quality deviation from the average 
+  vector[28] delta; // vector of neighborhood deviation from the average
+  real<lower=0> mu; // average house price value
+  real<lower=0> sigma_gamma; // standard deviation of the gamma coefficients
+  real<lower=0> sigma_delta; // standard deviation of the delta coefficients
+  real<lower=0> sigma_y; // standard deviation of the observations
+}
+transformed parameters {
+  vector[N] y_hat;
+
+  for (i in 1:N)
+    y_hat[i] = mu + gamma[qual_id[i]] + delta[nbhd_id[i]];
+}
+model {
+  //priors on the scale coefficient
+  sigma_gamma ~ cauchy(0,2.5);
+  sigma_delta ~ cauchy(0,2.5);
+  sigma_y ~ gamma(2,0.1);
+  // gets quality and neighborhood level deviation
+  gamma ~ normal(0, sigma_gamma);
+  delta ~ normal(0, sigma_delta);
+  // the likelihood
+  y ~ normal(y_hat, sigma_y);
+}
+
+"
+
+```
+
+Now we'll train our model. Note we are using Markov chain Monte Carlo (MCMC) to increase our sample size. The *chains* parameter specifies the number of Markov chains and the *iter* parameter specifies the number of iterations for each chain.
+
+```{r}
+
+set.seed(1234)
+
+dat<-list(N = nrow(Houses), qual_id = Houses$Overall.Qual, nbhd_id = Houses$Neighborhood, y = Houses$SalePrice )
+mod <-stan(model_code = crossed_stan_code , data=dat, iter=1000, chains=2, control = list(max_treedepth = 12))
+
+```
+
+We received no errors! Now we'll examine the trace of *sigma_y* (the standard deviation of all the observations) in our MCMC model.
+
+```{r}
+
+stan_trace(mod, pars = c("sigma_y"))
+
+```
+
+Now we'll extract out out samples produced and put them in a dataframe.
+
+```{r}
+
+crossed_samples <- as.data.frame( mod@sim$samples )  %>% select(gamma.1. : delta.28.)
+
+Qual_stats <- crossed_samples %>% select(gamma.1. : gamma.10.) %>%
+  gather(key = Qual, value = SalePrice) %>% 
+  arrange(Qual) %>%
+  group_by(Qual) %>% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %>%
+  mutate(Qual = as.numeric( gsub("[^0-9]", "", Qual))) %>%
+  arrange(Qual)
+
+Neighborhood_stats <- crossed_samples %>% select(delta.1. : delta.28.) %>%
+  gather(key = Neighborhood, value = SalePrice) %>%
+  group_by(Neighborhood) %>% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %>%
+  mutate(Neighborhood = as.factor(as.numeric( gsub("[^0-9]", "", Neighborhood)))) %>%
+  arrange(Neighborhood)
+
+```
+
+Now we'll look at the deviation from the mean home price for each quality class. Interestingly, this suggests we need a rank of 8 to be significantly above the average home price.
+
+```{r}
+
+Qual_stats %>%  ggplot(aes(x = Qual, y = mean)) +
+  geom_point() +
+  scale_x_continuous(breaks= 1:10) +
+  geom_segment(aes(x = Qual, y = mean+sd, xend = Qual, yend = mean-sd), color = "blue") +
+  geom_hline(aes(yintercept=0), colour="red", linetype="dashed") +
+  xlab("Overall Quality Ranking") +
+  ylab("Deviation from Average Home Price (in 1000s)")
+
+```
+
+Now we'll do the same thing only for the neighborhoods.
+
+```{r}
+
+levels(Neighborhood_stats$Neighborhood) <- Neighborhood_array
+
+Neighborhood_stats %>%  ggplot(aes(x = Neighborhood, y = mean)) +
+  geom_point() +
+  geom_segment(aes(x = Neighborhood, y = mean+sd, xend = Neighborhood, yend = mean-sd), color = "blue") +
+  geom_hline(aes(yintercept=0), colour="red", linetype="dashed") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(10, 10, 10, 20)) +
+  ylab("Deviation from Average Home Price (in 1000s)")
+
+```
+
+##References
+
+1. Cock, D. [*Ames, Iowa: Alternative to the Boston Housing Data as an End of Semester Regression Project*](https://ww2.amstat.org/publications/jse/v19n3/decock.pdf)
+2. Fonnesbeck, C. [*A Primer on Bayesian Multilevel Modeling using PyStan*](http://mc-stan.org/users/documentation/case-studies/radon.html)
+3. Harris, M. [*Estimating a beta distribution with STAN*](https://matthewdharris.com/2016/10/18/estimating-a-beta-distribution-with-stan-hmc/)
+4. Hertzog, L. [*Hierarchical models with RSTAN part 1*](https://biologyforfun.wordpress.com/2016/11/10/hierarchical-models-with-rstan-part-1/)
+5. Ozaki, T. [*Bayesian modeling with R and Stan (3): Simple hierarchical Bayesian model*](http://tjo-en.hatenablog.com/entry/2015/08/04/190000)

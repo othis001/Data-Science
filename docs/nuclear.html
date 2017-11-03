@@ -220,96 +220,13 @@ table_list &lt;-
 <p>After some searching, we find the relevant table is at position 25.</p>
 <pre class="r"><code>table &lt;- table_list[[25]]
 table %&gt;% head() %&gt;% kable()</code></pre>
-<table>
-<thead>
-<tr class="header">
-<th align="left">Name</th>
-<th align="left">Reactor No.</th>
-<th align="left">Reactor</th>
-<th align="left">Reactor</th>
-<th align="left">Status</th>
-<th align="left">Capacity in MW</th>
-<th align="left">Capacity in MW</th>
-<th align="left">Construction Start Date</th>
-<th align="left">Commercial Operation Date</th>
-<th align="left">Closure</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td align="left">Name</td>
-<td align="left">Reactor No.</td>
-<td align="left">Type</td>
-<td align="left">Reactor</td>
-<td align="left">Model</td>
-<td align="left">Capacity in MW</td>
-<td align="left">Capacity in MW</td>
-<td align="left">Construction Start Date</td>
-<td align="left">Net</td>
-<td align="left">Gross</td>
-</tr>
-<tr class="even">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">1</td>
-<td align="left">BWR</td>
-<td align="left">BWR-3</td>
-<td align="left">Inoperable</td>
-<td align="left">439</td>
-<td align="left">460</td>
-<td align="left">25 July 1967</td>
-<td align="left">26 March 1971</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="odd">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">2</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Inoperable</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">9 June 1969</td>
-<td align="left">18 July 1974</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="even">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">3</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Inoperable</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">28 December 1970</td>
-<td align="left">27 March 1976</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="odd">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">4</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Shut down/ Inoperable</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">12 February 1973</td>
-<td align="left">12 October 1978</td>
-<td align="left">19 May 2011</td>
-</tr>
-<tr class="even">
-<td align="left">Fukushima Daiichi</td>
-<td align="left">5</td>
-<td align="left">BWR</td>
-<td align="left">BWR-4</td>
-<td align="left">Shut down</td>
-<td align="left">760</td>
-<td align="left">784</td>
-<td align="left">22 May 1972</td>
-<td align="left">18 April 1978</td>
-<td align="left">17 December 2013</td>
-</tr>
-</tbody>
-</table>
+<p>Name Unit No. Reactor Reactor Status Capacity in MW Capacity in MW Construction Start Date Commercial Operation Date Closure<br />
+—————— ——— ——– ——– ———————- ————— ————— ———————— ————————– —————– Name Unit No. Type Reactor Model Capacity in MW Capacity in MW Construction Start Date Net Gross<br />
+Fukushima Daiichi 1 BWR BWR-3 Inoperable 439 460 25 July 1967 26 March 1971 19 May 2011<br />
+Fukushima Daiichi 2 BWR BWR-4 Inoperable 760 784 9 June 1969 18 July 1974 19 May 2011<br />
+Fukushima Daiichi 3 BWR BWR-4 Inoperable 760 784 28 December 1970 27 March 1976 19 May 2011<br />
+Fukushima Daiichi 4 BWR BWR-4 Shut down/ Inoperable 760 784 12 February 1973 12 October 1978 19 May 2011<br />
+Fukushima Daiichi 5 BWR BWR-4 Shut down 760 784 22 May 1972 18 April 1978 17 December 2013</p>
 <p>Now we fix the column names.</p>
 <pre class="r"><code>names(table) &lt;- c(&quot;Name&quot;,   &quot;Reactor_No&quot;, &quot;Type&quot;, &quot;Model&quot;, &quot;Status&quot;, &quot;Net_Capacity&quot;, &quot;Gross_Capacity&quot;, &quot;Construction_Start_Date&quot;, &quot;Commercial_Operation_Date&quot;, &quot;Closure&quot;)
 table &lt;- table[-1, ] # drop the first row</code></pre>
