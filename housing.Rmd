@@ -22,6 +22,7 @@ First we'll load the required libraries for this project. We'll be using the R i
 
 library(caret)
 library(rstan)
+library(bridgesampling)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
@@ -68,13 +69,15 @@ varImp(mod)
 
 ```
 
-This suggests *Overall.Qual* is the most important so we'll use it in our model. Note this is a discrete variable that takes integers values from 1 to 10 and describes the overall quality of the house with 10 being the highest quality.
+This suggests *Overall.Qual* is the most important so we'll use it in our model. Note this is a discrete variable that takes integers values from 1 to 10 and describes the overall quality of the house with 10 being the highest quality. Also we'll use *Gr.Liv.Area*. This is the floor area of the house on the ground level. To use it in our model, we will convert it into a discrete variable by changing each sample's value to its corresponding quartile. 
 
 Now we'll reload our data and select the columns we're interested in. Also we'll transform the neighborhood names into integers. 
 
 ```{r}
 
-Houses <- read.csv("AmesHousing.csv") %>% mutate(Neighborhood = as.numeric(Neighborhood), SalePrice = SalePrice / 1000) %>% select(SalePrice, Neighborhood, Overall.Qual) %>% na.omit()
+Houses <- read.csv("AmesHousing.csv") %>%
+  mutate(Neighborhood = as.numeric(Neighborhood), SalePrice = SalePrice / 1000, Gr.Liv.Area = ntile(Gr.Liv.Area, 4)) %>%
+  select(SalePrice, Neighborhood, Overall.Qual, Gr.Liv.Area) %>% na.omit()
 
 ```
 
@@ -90,30 +93,35 @@ data {
   int<lower=0> N; //number of observations
   int<lower=1,upper=10> qual_id[N]; // vector of quality indices
   int<lower=1,upper=28> nbhd_id[N]; // vector of neighborhood indices
+  int<lower=1,upper=28> area_id[N]; // vector of area indices
   vector[N] y;
 }
 parameters {
   vector[10] gamma; // vector of quality deviation from the average 
   vector[28] delta; // vector of neighborhood deviation from the average
+  vector[4]  epsilon; // vector of area quantile deviation from the average
   real<lower=0> mu; // average house price value
   real<lower=0> sigma_gamma; // standard deviation of the gamma coefficients
   real<lower=0> sigma_delta; // standard deviation of the delta coefficients
+  real<lower=0> sigma_epsilon; // standard deviation of the epsilon coefficients
   real<lower=0> sigma_y; // standard deviation of the observations
 }
 transformed parameters {
   vector[N] y_hat;
 
   for (i in 1:N)
-    y_hat[i] = mu + gamma[qual_id[i]] + delta[nbhd_id[i]];
+    y_hat[i] = mu + gamma[qual_id[i]] + delta[nbhd_id[i]] + epsilon[area_id[i]];
 }
 model {
-  //priors on the scale coefficient
+  // priors on the scale coefficient
   sigma_gamma ~ cauchy(0,2.5);
   sigma_delta ~ cauchy(0,2.5);
+  sigma_epsilon ~ cauchy(0,2.5);
   sigma_y ~ gamma(2,0.1);
   // gets quality and neighborhood level deviation
   gamma ~ normal(0, sigma_gamma);
   delta ~ normal(0, sigma_delta);
+  epsilon ~ normal(0, sigma_epsilon);
   // the likelihood
   y ~ normal(y_hat, sigma_y);
 }
@@ -128,7 +136,7 @@ Now we'll train our model. Note we are using Markov chain Monte Carlo (MCMC) to 
 
 set.seed(1234)
 
-dat<-list(N = nrow(Houses), qual_id = Houses$Overall.Qual, nbhd_id = Houses$Neighborhood, y = Houses$SalePrice )
+dat<-list(N = nrow(Houses), qual_id = Houses$Overall.Qual, nbhd_id = Houses$Neighborhood, area_id = Houses$Gr.Liv.Area, y = Houses$SalePrice)
 mod <-stan(model_code = crossed_stan_code , data=dat, iter=1000, chains=2, control = list(max_treedepth = 12))
 
 ```
@@ -145,7 +153,7 @@ Now we'll extract out out samples produced and put them in a dataframe.
 
 ```{r}
 
-crossed_samples <- as.data.frame( mod@sim$samples )  %>% select(gamma.1. : delta.28.)
+crossed_samples <- as.data.frame( mod@sim$samples )  %>% select(gamma.1. : epsilon.4.)
 
 Qual_stats <- crossed_samples %>% select(gamma.1. : gamma.10.) %>%
   gather(key = Qual, value = SalePrice) %>% 
@@ -159,6 +167,13 @@ Neighborhood_stats <- crossed_samples %>% select(delta.1. : delta.28.) %>%
   group_by(Neighborhood) %>% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %>%
   mutate(Neighborhood = as.factor(as.numeric( gsub("[^0-9]", "", Neighborhood)))) %>%
   arrange(Neighborhood)
+
+Area_stats <- crossed_samples %>% select(epsilon.1. : epsilon.4.) %>%
+  gather(key = Area_quartile, value = SalePrice) %>%
+  group_by(Area_quartile) %>% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %>%
+  mutate(Area_quartile = as.factor(as.numeric( gsub("[^0-9]", "", Area_quartile)))) %>%
+  arrange(Area_quartile)
+
 
 ```
 
@@ -188,6 +203,67 @@ Neighborhood_stats %>%  ggplot(aes(x = Neighborhood, y = mean)) +
   geom_hline(aes(yintercept=0), colour="red", linetype="dashed") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(10, 10, 10, 20)) +
   ylab("Deviation from Average Home Price (in 1000s)")
+
+```
+
+Finally for the quartiles of total ground floor area.
+
+```{r}
+
+Area_stats %>%  ggplot(aes(x = Area_quartile, y = mean)) +
+  geom_point() +
+  geom_segment(aes(x = Area_quartile, y = mean+sd, xend = Area_quartile, yend = mean-sd), color = "blue") +
+  geom_hline(aes(yintercept=0), colour="red", linetype="dashed") +
+  xlab("Quartile of Ground Floor Area") +
+  ylab("Deviation from Average Home Price (in 1000s)")
+
+```
+
+Now we'll try a non-hierarchical normal model and compare it to to the hierarchical model.
+
+```{r}
+
+non_hier_stan_code <- 
+
+"
+
+data {
+  int<lower=0> N; //number of observations
+  int<lower=1,upper=10> qual_id[N]; // vector of quality indices
+  int<lower=1,upper=28> nbhd_id[N]; // vector of neighborhood indices
+  int<lower=1,upper=28> area_id[N]; // vector of area indices
+  vector[N] y;
+}
+parameters {
+  real y_hat;
+  real<lower=0> sigma_y; // standard deviation of the observations
+}
+model {
+  y ~ normal(y_hat, sigma_y);
+}
+
+"
+
+```
+
+```{r}
+
+set.seed(1234)
+
+non_hier_mod <-stan(model_code = non_hier_stan_code , data=dat, iter=1000, chains=2, control = list(max_treedepth = 12))
+
+```
+
+To compare the the models, we can compute the Bayes factor by using the *bf* function in the *bridgesampling* package. Here we compute the Bayes factor, which quantifies how much more likely the data is under the hierarchical model versus the non-hierarchical model.
+
+
+```{r}
+
+set.seed(1234)
+
+mod.bridge <- bridge_sampler(mod, silent = TRUE)
+non_hier_mod.bridge <- bridge_sampler(non_hier_mod, silent = TRUE)
+bf(mod.bridge, non_hier_mod.bridge)
 
 ```
 
