@@ -29,7 +29,7 @@ library(tidyr)
 
 ```
 
-Now we'll load our data. For this project we'll study how the distributions of house prices vary by neighborhood. Note there is information for 28 neighborhoods and 2930 houses. We'll also create a list of full names of the neighborhoods which can be found in the documentation.
+Now we'll load our data. For this project we'll study how the distributions of house prices vary by neighborhood. Note there is information for 28 neighborhoods and 2930 houses. The mean home price for this data is approximately $181,000. We'll also create a list of full names of the neighborhoods which can be found in the documentation.
 
 ```{r}
 
@@ -81,7 +81,7 @@ Houses <- read.csv("AmesHousing.csv") %>%
 
 ```
 
-Here is the STAN code for our model.
+To model our data, we’ll use a crossed-hierarchical model. Crossed-hierarchical models are useful when we have more than one partitioning of the data. Note the partitions are imbalanced for our data so like for the electricity example, hierarchical Bayes allows us to borrow strength from the likelihood of other partitions. For our crossed-hierarchical model, the intercept represents the average house price and a parameter is added to represent the deviation from this average for each of the three grouping variables. Below is a hierarchical diagram of how the model is constructed. Here is the STAN code for our model.
 
 ```{r}
 
@@ -90,38 +90,46 @@ crossed_stan_code <-
 "
 
 data {
-  int<lower=0> N; //number of observations
-  int<lower=1,upper=10> qual_id[N]; // vector of quality indices
-  int<lower=1,upper=28> nbhd_id[N]; // vector of neighborhood indices
-  int<lower=1,upper=28> area_id[N]; // vector of area indices
-  vector[N] y;
+  int<lower=0> m; // number of observations
+  int<lower=1,upper=10> q_id[m]; // quality index for each observation
+  int<lower=1,upper=28> n_id[m]; // neighborhood index for each observation
+  int<lower=1,upper=28> a_id[m]; // area index for each observation
+  vector[m] y; // house price for each observation
 }
 parameters {
-  vector[10] gamma; // vector of quality deviation from the average 
-  vector[28] delta; // vector of neighborhood deviation from the average
-  vector[4]  epsilon; // vector of area quantile deviation from the average
-  real<lower=0> mu; // average house price value
-  real<lower=0> sigma_gamma; // standard deviation of the gamma coefficients
-  real<lower=0> sigma_delta; // standard deviation of the delta coefficients
-  real<lower=0> sigma_epsilon; // standard deviation of the epsilon coefficients
-  real<lower=0> sigma_y; // standard deviation of the observations
+  real<lower=0> mu; // average house price value. the intercept in this model
+
+  vector[10] Q; // vector of quality deviations from the average
+  real<lower=0> sigma_Q; // standard deviation of the Q coefficients
+
+  vector[28] N; // vector of neighborhood deviations from the average
+  real<lower=0> sigma_N; // standard deviation of the N coefficients
+
+  vector[4]  A; // vector of area quantile deviations from the average
+  real<lower=0> sigma_A; // standard deviation of the A coefficients
+
+  real<lower=0> sigma_y; // standard deviation of all the observations
 }
 transformed parameters {
-  vector[N] y_hat;
+  vector[m] y_hat;
 
-  for (i in 1:N)
-    y_hat[i] = mu + gamma[qual_id[i]] + delta[nbhd_id[i]] + epsilon[area_id[i]];
+  // fits the deviation from the average home price of each category to each observation  
+  for (i in 1:m)
+    y_hat[i] = mu + Q[q_id[i]] + N[n_id[i]] + A[a_id[i]];
 }
 model {
-  // priors on the scale coefficient
-  sigma_gamma ~ cauchy(0,2.5);
-  sigma_delta ~ cauchy(0,2.5);
-  sigma_epsilon ~ cauchy(0,2.5);
+  // priors 
+  Q ~ normal(0, sigma_Q);
+  sigma_Q ~ cauchy(0,2.5);
+
+  N ~ normal(0, sigma_N);
+  sigma_N ~ cauchy(0,2.5);
+
+  A ~ normal(0, sigma_A);
+  sigma_A ~ cauchy(0,2.5);
+
   sigma_y ~ gamma(2,0.1);
-  // gets quality and neighborhood level deviation
-  gamma ~ normal(0, sigma_gamma);
-  delta ~ normal(0, sigma_delta);
-  epsilon ~ normal(0, sigma_epsilon);
+
   // the likelihood
   y ~ normal(y_hat, sigma_y);
 }
@@ -130,18 +138,24 @@ model {
 
 ```
 
+Here is a hierarchical diagram of the model.
+
+![](7.png)
+
+The model estimates the deviation from average home price, mu, for each of the following partitions of the data: A (the ground floor area quartile), N (the neighborhood), and Q (the quality rating). The model was run with 1000 iterations of MCMC (Markov Chain Monte Carlo) and two chains. The trace of the standard deviation of all observations in our MCMC model is shown below.
+
 Now we'll train our model. Note we are using Markov chain Monte Carlo (MCMC) to increase our sample size. The *chains* parameter specifies the number of Markov chains and the *iter* parameter specifies the number of iterations for each chain.
 
 ```{r}
 
 set.seed(1234)
 
-dat<-list(N = nrow(Houses), qual_id = Houses$Overall.Qual, nbhd_id = Houses$Neighborhood, area_id = Houses$Gr.Liv.Area, y = Houses$SalePrice)
+dat<-list(m = nrow(Houses), q_id = Houses$Overall.Qual, n_id = Houses$Neighborhood, a_id = Houses$Gr.Liv.Area, y = Houses$SalePrice)
 mod <-stan(model_code = crossed_stan_code , data=dat, iter=1000, chains=2, control = list(max_treedepth = 12))
 
 ```
 
-We received no errors! Now we'll examine the trace of *sigma_y* (the standard deviation of all the observations) in our MCMC model.
+We received no errors! Now we'll examine the trace of *sigma_y* (the standard deviation of all the observations) in our MCMC model. At first glance, sigma_y appears to not be converging, but the values are actually all very close to 35. Now we’ll examine the distributions of the deviations from the average home price for each parameter.
 
 ```{r}
 
@@ -153,53 +167,51 @@ Now we'll extract out out samples produced and put them in a dataframe.
 
 ```{r}
 
-crossed_samples <- as.data.frame( mod@sim$samples )  %>% select(gamma.1. : epsilon.4.)
+crossed_samples <- as.data.frame( mod@sim$samples )  %>% select(Q.1. : A.4.)
 
-Qual_stats <- crossed_samples %>% select(gamma.1. : gamma.10.) %>%
+Quals <- crossed_samples %>% select(Q.1. : Q.10.) %>%
   gather(key = Qual, value = SalePrice) %>% 
   arrange(Qual) %>%
-  group_by(Qual) %>% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %>%
   mutate(Qual = as.numeric( gsub("[^0-9]", "", Qual))) %>%
   arrange(Qual)
 
-Neighborhood_stats <- crossed_samples %>% select(delta.1. : delta.28.) %>%
-  gather(key = Neighborhood, value = SalePrice) %>%
-  group_by(Neighborhood) %>% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %>%
-  mutate(Neighborhood = as.factor(as.numeric( gsub("[^0-9]", "", Neighborhood)))) %>%
+Neighborhoods <- crossed_samples %>% select(N.1. : N.28.) %>%
+  gather(key = Neighborhood, value = SalePrice) %>% 
+  arrange(Neighborhood) %>%
+  mutate(Neighborhood = as.numeric( gsub("[^0-9]", "", Neighborhood))) %>%
   arrange(Neighborhood)
 
-Area_stats <- crossed_samples %>% select(epsilon.1. : epsilon.4.) %>%
-  gather(key = Area_quartile, value = SalePrice) %>%
-  group_by(Area_quartile) %>% summarise(mean = mean(SalePrice), sd = sd(SalePrice)) %>%
-  mutate(Area_quartile = as.factor(as.numeric( gsub("[^0-9]", "", Area_quartile)))) %>%
+Areas <-crossed_samples %>% select(A.1. : A.4.) %>%
+  gather(key = Area_quartile, value = SalePrice) %>% 
+  arrange(Area_quartile) %>%
+  mutate(Area_quartile = as.numeric( gsub("[^0-9]", "", Area_quartile))) %>%
   arrange(Area_quartile)
-
 
 ```
 
-Now we'll look at the deviation from the mean home price for each quality class. Interestingly, this suggests we need a rank of 8 to be significantly above the average home price.
+Now we'll look at the deviation from the mean home price for each quality class. Here we see quality rating and home price are highly correlated. This provides a sanity check for our model as it supports the results obtained from the conditional inference tree earlier.   Also it is interesting to note this suggests a quality rating of 8 or higher is required to necessitate a significantly above average home price.
+
 
 ```{r}
 
-Qual_stats %>%  ggplot(aes(x = Qual, y = mean)) +
-  geom_point() +
-  scale_x_continuous(breaks= 1:10) +
-  geom_segment(aes(x = Qual, y = mean+sd, xend = Qual, yend = mean-sd), color = "blue") +
+Quals %>%  ggplot(aes(x = factor(Qual), y = SalePrice)) +
+  geom_violin(fill = "blue", alpha = 0.3) +
+  geom_boxplot(width=0.1) +
   geom_hline(aes(yintercept=0), colour="red", linetype="dashed") +
   xlab("Overall Quality Ranking") +
   ylab("Deviation from Average Home Price (in 1000s)")
 
 ```
 
-Now we'll do the same thing only for the neighborhoods.
+Now we'll do the same thing only for the neighborhoods. Note the neighborhoods appear to be quite segregated by home price and some neighborhoods such as Green Hills and Landmark contain a much wider range of home prices.
 
 ```{r}
 
-levels(Neighborhood_stats$Neighborhood) <- Neighborhood_array
+Neighborhoods$Neighborhood <- as.factor(Neighborhoods$Neighborhood)
+levels(Neighborhoods$Neighborhood) <- Neighborhood_array
 
-Neighborhood_stats %>%  ggplot(aes(x = Neighborhood, y = mean)) +
-  geom_point() +
-  geom_segment(aes(x = Neighborhood, y = mean+sd, xend = Neighborhood, yend = mean-sd), color = "blue") +
+Neighborhoods %>%  ggplot(aes(x = Neighborhood, y = SalePrice)) +
+  geom_violin(fill = "blue", alpha = 0.3) +
   geom_hline(aes(yintercept=0), colour="red", linetype="dashed") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), plot.margin = margin(10, 10, 10, 20)) +
   ylab("Deviation from Average Home Price (in 1000s)")
@@ -210,9 +222,9 @@ Finally for the quartiles of total ground floor area.
 
 ```{r}
 
-Area_stats %>%  ggplot(aes(x = Area_quartile, y = mean)) +
-  geom_point() +
-  geom_segment(aes(x = Area_quartile, y = mean+sd, xend = Area_quartile, yend = mean-sd), color = "blue") +
+Areas %>%  ggplot(aes(x = factor(Area_quartile), y = SalePrice)) +
+  geom_violin(fill = "blue", alpha = 0.3) +
+  geom_boxplot(width=0.1) +
   geom_hline(aes(yintercept=0), colour="red", linetype="dashed") +
   xlab("Quartile of Ground Floor Area") +
   ylab("Deviation from Average Home Price (in 1000s)")
@@ -226,20 +238,23 @@ Now we'll try a non-hierarchical normal model and compare it to to the hierarchi
 non_hier_stan_code <- 
 
 "
-
 data {
-  int<lower=0> N; //number of observations
-  int<lower=1,upper=10> qual_id[N]; // vector of quality indices
-  int<lower=1,upper=28> nbhd_id[N]; // vector of neighborhood indices
-  int<lower=1,upper=28> area_id[N]; // vector of area indices
-  vector[N] y;
+  int<lower=0> m; // number of observations
+  int<lower=1,upper=10> q_id[m]; // quality index for each observation
+  int<lower=1,upper=28> n_id[m]; // neighborhood index for each observation
+  int<lower=1,upper=28> a_id[m]; // area index for each observation
+  vector[m] y; // house price for each observation
 }
 parameters {
-  real y_hat;
-  real<lower=0> sigma_y; // standard deviation of the observations
+  real<lower=0> mu; // average house price value. the intercept in this model
+  real<lower=0> sigma_y; // standard deviation of all the observations
 }
 model {
-  y ~ normal(y_hat, sigma_y);
+  // priors 
+  sigma_y ~ gamma(2,0.1);
+
+  // the likelihood
+  y ~ normal(mu, sigma_y);
 }
 
 "
