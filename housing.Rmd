@@ -142,7 +142,7 @@ Here is a hierarchical diagram of the model.
 
 ![](7.png)
 
-The model estimates the deviation from average home price, mu, for each of the following partitions of the data: A (the ground floor area quartile), N (the neighborhood), and Q (the quality rating). The model was run with 1000 iterations of MCMC (Markov Chain Monte Carlo) and two chains. The trace of the standard deviation of all observations in our MCMC model is shown below.
+The model estimates the deviation from average home price, mu, for each partition of the following partitionings of the data: A (the ground floor area quartile), N (the neighborhood), and Q (the quality rating). The model was run with 1000 iterations of MCMC (Markov Chain Monte Carlo) and two chains. The trace of the standard deviation of all observations in our MCMC model is shown below.
 
 Now we'll train our model. Note we are using Markov chain Monte Carlo (MCMC) to increase our sample size. The *chains* parameter specifies the number of Markov chains and the *iter* parameter specifies the number of iterations for each chain.
 
@@ -171,21 +171,15 @@ crossed_samples <- as.data.frame( mod@sim$samples )  %>% select(Q.1. : A.4.)
 
 Quals <- crossed_samples %>% select(Q.1. : Q.10.) %>%
   gather(key = Qual, value = SalePrice) %>% 
-  arrange(Qual) %>%
-  mutate(Qual = as.numeric( gsub("[^0-9]", "", Qual))) %>%
-  arrange(Qual)
+  mutate(Qual = as.numeric( gsub("[^0-9]", "", Qual)))
 
 Neighborhoods <- crossed_samples %>% select(N.1. : N.28.) %>%
   gather(key = Neighborhood, value = SalePrice) %>% 
-  arrange(Neighborhood) %>%
-  mutate(Neighborhood = as.numeric( gsub("[^0-9]", "", Neighborhood))) %>%
-  arrange(Neighborhood)
+  mutate(Neighborhood = as.numeric( gsub("[^0-9]", "", Neighborhood)))
 
 Areas <-crossed_samples %>% select(A.1. : A.4.) %>%
   gather(key = Area_quartile, value = SalePrice) %>% 
-  arrange(Area_quartile) %>%
-  mutate(Area_quartile = as.numeric( gsub("[^0-9]", "", Area_quartile))) %>%
-  arrange(Area_quartile)
+  mutate(Area_quartile = as.numeric( gsub("[^0-9]", "", Area_quartile)))
 
 ```
 
